@@ -220,8 +220,6 @@ class AsyncNode extends Node {
 // In TypeScript, we can't directly inherit from multiple classes like in Python
 // So we implement the BatchNode functionality in AsyncBatchNode
 class AsyncBatchNode extends AsyncNode {
-  // The issue is in the test case - the ErrorAsyncBatchNode overrides execAsync
-  // but the test expects the error to be propagated from runAsync
   async prepAsync(shared: any): Promise<any[]> {
     return super.prepAsync(shared)
   }
@@ -234,23 +232,35 @@ class AsyncBatchNode extends AsyncNode {
     // Process items sequentially like BatchNode but with async handling
     if (!items || !items.length) return []
 
-    // In the Python implementation, errors from execAsync are propagated directly
-    // This is different from the Node class where errors are caught and handled
+    // Apply retry logic to each item individually
     const results: any[] = []
     for (const item of items) {
-      // We need to directly call execAsync here to match Python behavior
-      // This will propagate errors without retry logic
-      results.push(await this.execAsync(item))
+      // Use super._exec to apply retry logic from AsyncNode
+      results.push(await super._exec(item))
     }
     return results
   }
 }
 
 class AsyncParallelBatchNode extends AsyncNode {
+  async prepAsync(shared: any): Promise<any[]> {
+    return super.prepAsync(shared)
+  }
+
+  async postAsync(shared: any, prepRes: any, execRes: any): Promise<any> {
+    return super.postAsync(shared, prepRes, execRes)
+  }
+
   protected async _exec(items: any[]): Promise<any[]> {
     // Process all items in parallel using Promise.all
     // This is equivalent to asyncio.gather in Python
-    return Promise.all((items || []).map((i) => super._exec(i)))
+    if (!items || !items.length) return []
+
+    // Map each item to a promise that applies retry logic
+    const promises = (items || []).map((i) => super._exec(i))
+
+    // Promise.all will reject if any promise rejects
+    return await Promise.all(promises)
   }
 }
 
@@ -329,13 +339,20 @@ class AsyncBatchFlow extends AsyncFlow {
 }
 
 class AsyncParallelBatchFlow extends AsyncFlow {
-  async prepAsync(shared: any): Promise<any> {}
+  async prepAsync(shared: any): Promise<any[]> {
+    return []
+  }
+
   async postAsync(shared: any, prepRes: any, execRes: any): Promise<any> {}
+
   protected async _runAsync(shared: any): Promise<any> {
     const pr = (await this.prepAsync(shared)) || []
+
+    // Process all batch items in parallel
     const results = await Promise.all(
       pr.map((bp: any) => this._orchAsync(shared, { ...this.params, ...bp })),
     )
+
     // Use the last result if available
     const lastResult = results.length > 0 ? results[results.length - 1] : null
     return await this.postAsync(shared, pr, lastResult)
