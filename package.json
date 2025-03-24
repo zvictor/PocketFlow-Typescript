@@ -1,0 +1,27 @@
+{
+  "name": "pocketflow",
+  "version": "0.0.1",
+  "repository": "github:The-Pocket/PocketFlow-Typescript",
+  "bugs": {
+    "url": "https://github.com/The-Pocket/PocketFlow-Typescript/issues"
+  },
+  "description": "Minimalist LLM framework",
+  "type": "module",
+  "keywords": [
+    "AI",
+    "Pocket",
+    "Flow",
+    "Workflow",
+    "LLM"
+  ],
+  "license": "MIT",
+  "author": {
+    "name": "Victor Duarte",
+    "url": "https://github.com/zvictor"
+  },
+  "scripts": {
+  },
+  "devDependencies": {
+  },
+  "packageManager": "pnpm@10.6.5"
+}
