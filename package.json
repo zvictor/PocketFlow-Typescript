@@ -22,6 +22,14 @@
   "scripts": {
   },
   "devDependencies": {
+    "typescript": "^5.0.0",
+    "@ianvs/prettier-plugin-sort-imports": "4.4.1",
+    "@std/assert": "npm:@jsr/std__assert@1.0.11",
+    "@total-typescript/ts-reset": "0.6.1",
+    "@tsconfig/node-lts": "22.0.1",
+    "@types/node": "22.13.1",
+    "prettier": "3.5.0",
+    "tsx": "4.19.2"
   },
   "packageManager": "pnpm@10.6.5"
 }
