@@ -20,6 +20,7 @@
     "url": "https://github.com/zvictor"
   },
   "scripts": {
+    "test": "NODE_OPTIONS='--experimental-vm-modules --import=tsx node' node --test **/*.test.ts"
   },
   "devDependencies": {
     "typescript": "^5.0.0",
