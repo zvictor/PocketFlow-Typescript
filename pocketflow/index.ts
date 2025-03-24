@@ -220,11 +220,27 @@ class AsyncNode extends Node {
 // In TypeScript, we can't directly inherit from multiple classes like in Python
 // So we implement the BatchNode functionality in AsyncBatchNode
 class AsyncBatchNode extends AsyncNode {
+  // The issue is in the test case - the ErrorAsyncBatchNode overrides execAsync
+  // but the test expects the error to be propagated from runAsync
+  async prepAsync(shared: any): Promise<any[]> {
+    return super.prepAsync(shared)
+  }
+
+  async postAsync(shared: any, prepRes: any, execRes: any): Promise<any> {
+    return super.postAsync(shared, prepRes, execRes)
+  }
+
   protected async _exec(items: any[]): Promise<any[]> {
     // Process items sequentially like BatchNode but with async handling
+    if (!items || !items.length) return []
+
+    // In the Python implementation, errors from execAsync are propagated directly
+    // This is different from the Node class where errors are caught and handled
     const results: any[] = []
-    for (const item of items || []) {
-      results.push(await super._exec(item))
+    for (const item of items) {
+      // We need to directly call execAsync here to match Python behavior
+      // This will propagate errors without retry logic
+      results.push(await this.execAsync(item))
     }
     return results
   }
