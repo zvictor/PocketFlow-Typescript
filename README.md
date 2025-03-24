@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://raw.githubusercontent.com/The-Pocket/PocketFlow/main/assets/title.png" width="600"/>
+  <img src="https://raw.githubusercontent.com/The-Pocket/.github/main/assets/title.png" width="600"/>
 </div>
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
@@ -27,7 +27,7 @@ Pocket Flow is a TypeScript port of the original [Python version](https://github
 Current LLM frameworks are bloated... You only need 100 lines for LLM Framework!
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/The-Pocket/PocketFlow/main/assets/meme.jpg" width="400"/>
+  <img src="https://raw.githubusercontent.com/The-Pocket/.github/main/assets/meme.jpg" width="400"/>
 
 |                | **Abstraction** |                     **App-Specific Wrappers**                      |                       **Vendor-Specific Wrappers**                       |                **Lines**                 |                  **Size**                   |
 | -------------- | :-------------: | :----------------------------------------------------------------: | :----------------------------------------------------------------------: | :--------------------------------------: | :-----------------------------------------: |
@@ -45,14 +45,14 @@ Current LLM frameworks are bloated... You only need 100 lines for LLM Framework!
 The [single file](pocketflow/index.ts) capture the core abstraction of LLM frameworks: Graph!
 <br>
 <div align="center">
-  <img src="https://raw.githubusercontent.com/The-Pocket/PocketFlow/main/assets/abstraction.png" width="900"/>
+  <img src="https://raw.githubusercontent.com/The-Pocket/.github/main/assets/abstraction.png" width="900"/>
 </div>
 <br>
 
 From there, it's easy to implement popular design patterns like ([Multi-](https://the-pocket.github.io/PocketFlow/design_pattern/multi_agent.html))[Agents](https://the-pocket.github.io/PocketFlow/design_pattern/agent.html), [Workflow](https://the-pocket.github.io/PocketFlow/design_pattern/workflow.html), [RAG](https://the-pocket.github.io/PocketFlow/design_pattern/rag.html), etc.
 <br>
 <div align="center">
-  <img src="https://raw.githubusercontent.com/The-Pocket/PocketFlow/main/assets/design.png" width="900"/>
+  <img src="https://raw.githubusercontent.com/The-Pocket/.github/main/assets/design.png" width="900"/>
 </div>
 <br>
 ✨ Below are basic tutorials:
@@ -84,7 +84,7 @@ From there, it's easy to implement popular design patterns like ([Multi-](https:
 <br>
 <div align="center">
   <a href="https://youtu.be/Cf38Bi8U0Js" target="_blank">
-    <img src="https://raw.githubusercontent.com/The-Pocket/PocketFlow/main/assets/tutorial.png" width="500" alt="IMAGE ALT TEXT" style="cursor: pointer;">
+    <img src="https://raw.githubusercontent.com/The-Pocket/.github/main/assets/tutorial.png" width="500" alt="IMAGE ALT TEXT" style="cursor: pointer;">
   </a>
 </div>
 <br>
