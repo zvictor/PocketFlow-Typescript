@@ -160,8 +160,8 @@ describe('Fallback Tests', () => {
       const flow = new Flow(fallbackNode)
       const flowResult = flow.run(sharedStorage)
 
-      // Verify the flow result is the post result from the last node
-      assert.strictEqual(flowResult, 'fallback')
+      // Verify the flow result is undefined (Flow doesn't return value in Python)
+      assert.strictEqual(flowResult, undefined)
 
       // Verify the fallback node was executed and returned 'fallback'
       assert.strictEqual(sharedStorage['results'].length, 1)
@@ -233,8 +233,8 @@ describe('Fallback Tests', () => {
       const flow = new AsyncFlow(fallbackNode)
       const flowResult = await flow.runAsync(sharedStorage)
 
-      // Verify the flow result is the post result from the last node
-      assert.strictEqual(flowResult, 'async_fallback')
+      // Verify the flow result is undefined (AsyncFlow doesn't return value in Python)
+      assert.strictEqual(flowResult, undefined)
 
       // Verify the fallback node was executed and returned 'async_fallback'
       assert.strictEqual(sharedStorage['results'].length, 1)
