@@ -211,8 +211,6 @@ const OfflineFlow = new Flow(chunkNode)
 {% endtab %}
 {% endtabs %}
 
-````
-
 Usage example:
 
 {% tabs %}
@@ -222,7 +220,6 @@ shared = {
     "files": ["doc1.txt", "doc2.txt"],  # any text files
 }
 OfflineFlow.run(shared)
-````
 
 {% endtab %}
 
@@ -237,8 +234,6 @@ OfflineFlow.run(shared)
 
 {% endtab %}
 {% endtabs %}
-
-````
 
 ---
 
@@ -262,7 +257,6 @@ class EmbedQuery(Node):
 
     def post(self, shared, prep_res, q_emb):
         shared["q_emb"] = q_emb
-````
 
 {% endtab %}
 
@@ -409,8 +403,6 @@ const OnlineFlow = new Flow(embedQNode)
 {% endtab %}
 {% endtabs %}
 
-````
-
 Usage example:
 
 {% tabs %}
@@ -422,7 +414,6 @@ shared["question"] = "Why do people like cats?"
 
 OnlineFlow.run(shared)
 # final answer in shared["answer"]
-````
 
 {% endtab %}
 
