@@ -3,16 +3,15 @@
 ## Introduction
 
 - [Home](index.md)
-- [Agentic Coding Guide](guide.md)
 
 ## Core Abstraction
 
 - [Node](core_abstraction/node.md)
 - [Flow](core_abstraction/flow.md)
-- [Shared Store](core_abstraction/communication.md)
+- [Communication](core_abstraction/communication.md)
 - [Batch](core_abstraction/batch.md)
-- [Async](core_abstraction/async.md)
-- [Parallel](core_abstraction/parallel.md)
+- [(Advanced) Async](core_abstraction/async.md)
+- [(Advanced) Parallel](core_abstraction/parallel.md)
 
 ## Design Patterns
 
@@ -21,7 +20,7 @@
 - [RAG](design_pattern/rag.md)
 - [Map Reduce](design_pattern/mapreduce.md)
 - [Structured Output](design_pattern/structure.md)
-- [Multi-Agents](design_pattern/multi_agent.md)
+- [(Advanced) Multi-Agents](design_pattern/multi_agent.md)
 
 ## Utility Functions
 
@@ -32,3 +31,7 @@
 - [Embedding](utility_function/embedding.md)
 - [Vector Databases](utility_function/vector.md)
 - [Text-to-Speech](utility_function/text_to_speech.md)
+
+## Guides
+
+- [Agentic Coding Guide](guide.md)
