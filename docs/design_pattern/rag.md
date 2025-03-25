@@ -220,7 +220,7 @@ shared = {
     "files": ["doc1.txt", "doc2.txt"],  # any text files
 }
 OfflineFlow.run(shared)
-
+```
 {% endtab %}
 
 {% tab title="TypeScript" %}
@@ -257,7 +257,7 @@ class EmbedQuery(Node):
 
     def post(self, shared, prep_res, q_emb):
         shared["q_emb"] = q_emb
-
+```
 {% endtab %}
 
 {% tab title="TypeScript" %}
@@ -414,7 +414,7 @@ shared["question"] = "Why do people like cats?"
 
 OnlineFlow.run(shared)
 # final answer in shared["answer"]
-
+```
 {% endtab %}
 
 {% tab title="TypeScript" %}
@@ -430,7 +430,3 @@ OnlineFlow.run(shared)
 
 {% endtab %}
 {% endtabs %}
-
-```
-
-```
