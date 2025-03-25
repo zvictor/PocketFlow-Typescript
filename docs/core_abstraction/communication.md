@@ -32,13 +32,35 @@ If you know memory management, think of the **Shared Store** like a **heap** (sh
 
 A shared store is typically an in-mem dictionary, like:
 
+{% tabs %}
+{% tab title="Python" %}
+
 ```python
 shared = {"data": {}, "summary": {}, "config": {...}, ...}
 ```
 
+{% endtab %}
+
+{% tab title="TypeScript" %}
+
+```typescript
+const shared = {
+  data: {},
+  summary: {},
+  config: {...},
+  // ...
+}
+```
+
+{% endtab %}
+{% endtabs %}
+
 It can also contain local file handlers, DB connections, or a combination for persistence. We recommend deciding the data structure or DB schema first based on your app requirements.
 
 ### Example
+
+{% tabs %}
+{% tab title="Python" %}
 
 ```python
 class LoadData(Node):
@@ -72,6 +94,51 @@ shared = {}
 flow.run(shared)
 ```
 
+{% endtab %}
+
+{% tab title="TypeScript" %}
+
+```typescript
+class LoadData extends Node {
+  post(shared: any, prepRes: any, execRes: any): void {
+    // We write data to shared store
+    shared.data = 'Some text content'
+    return undefined
+  }
+}
+
+class Summarize extends Node {
+  prep(shared: any): any {
+    // We read data from shared store
+    return shared.data
+  }
+
+  exec(prepRes: any): any {
+    // Call LLM to summarize
+    const prompt = `Summarize: ${prepRes}`
+    const summary = callLLM(prompt)
+    return summary
+  }
+
+  post(shared: any, prepRes: any, execRes: any): string {
+    // We write summary to shared store
+    shared.summary = execRes
+    return 'default'
+  }
+}
+
+const loadData = new LoadData()
+const summarize = new Summarize()
+loadData.rshift(summarize)
+const flow = new Flow(loadData)
+
+const shared = {}
+flow.run(shared)
+```
+
+{% endtab %}
+{% endtabs %}
+
 Here:
 
 - `LoadData` writes to `shared["data"]`.
@@ -96,6 +163,9 @@ If you need to set child node params, see [Batch](./batch.md).
 Typically, **Params** are identifiers (e.g., file name, page number). Use them to fetch the task you assigned or write to a specific part of the shared store.
 
 ### Example
+
+{% tabs %}
+{% tab title="Python" %}
 
 ```python
 # 1) Create a Node that uses params
@@ -128,3 +198,46 @@ flow = Flow(start=node)
 flow.set_params({"filename": "doc2.txt"})
 flow.run(shared)  # The node summarizes doc2, not doc1
 ```
+
+{% endtab %}
+
+{% tab title="TypeScript" %}
+
+```typescript
+// 1) Create a Node that uses params
+class SummarizeFile extends Node {
+  prep(shared: any): any {
+    // Access the node's param
+    const filename = this.params.filename
+    return shared.data[filename] || ''
+  }
+
+  exec(prepRes: any): any {
+    const prompt = `Summarize: ${prepRes}`
+    return callLLM(prompt)
+  }
+
+  post(shared: any, prepRes: any, execRes: any): string {
+    const filename = this.params.filename
+    shared.summary[filename] = execRes
+    return 'default'
+  }
+}
+
+// 2) Set params
+const node = new SummarizeFile()
+
+// 3) Set Node params directly (for testing)
+node.setParams({ filename: 'doc1.txt' })
+node.run(shared)
+
+// 4) Create Flow
+const flow = new Flow(node)
+
+// 5) Set Flow params (overwrites node params)
+flow.setParams({ filename: 'doc2.txt' })
+flow.run(shared) // The node summarizes doc2, not doc1
+```
+
+{% endtab %}
+{% endtabs %}
