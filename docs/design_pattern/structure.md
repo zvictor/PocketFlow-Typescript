@@ -57,6 +57,9 @@ When prompting the LLM to produce **structured** output:
 
 ### Example Text Summarization
 
+{% tabs %}
+{% tab title="Python" %}
+
 ````python
 class SummarizeNode(Node):
     def exec(self, prep_res):
@@ -84,6 +87,48 @@ summary:
 
         return structured_result
 ````
+
+{% endtab %}
+
+{% tab title="TypeScript" %}
+
+````typescript
+class SummarizeNode extends Node {
+  exec(prepRes: string): any {
+    // Suppose prepRes is the text to summarize
+    const prompt = `
+Please summarize the following text as YAML, with exactly 3 bullet points
+
+${prepRes}
+
+Now, output:
+\`\`\`yaml
+summary:
+  - bullet 1
+  - bullet 2
+  - bullet 3
+\`\`\``
+
+    const response = callLLM(prompt)
+    const yamlStr = response.split('```yaml')[1].split('```')[0].trim()
+
+    // In TypeScript we would typically use a YAML parser like 'yaml'
+    const structuredResult = require('yaml').parse(yamlStr)
+
+    if (!('summary' in structuredResult)) {
+      throw new Error("Missing 'summary' in result")
+    }
+    if (!Array.isArray(structuredResult.summary)) {
+      throw new Error('Summary must be an array')
+    }
+
+    return structuredResult
+  }
+}
+````
+
+{% endtab %}
+{% endtabs %}
 
 {% hint style="info" %}
 Besides using `assert` statements, another popular way to validate schemas is [Pydantic](https://github.com/pydantic/pydantic)
