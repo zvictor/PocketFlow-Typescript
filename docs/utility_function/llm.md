@@ -26,8 +26,9 @@ Here, we provide some minimal example implementations:
    call_llm("How are you?")
    ```
 
-   > Store the API key in an environment variable like OPENAI_API_KEY for security.
-   {: .best-practice }
+   {% hint style="success" %}
+   Store the API key in an environment variable like OPENAI_API_KEY for security.
+   {% endhint %}
 
 2. Claude (Anthropic)
 
@@ -114,10 +115,11 @@ def call_llm(prompt):
     pass
 ```
 
-> ⚠️ Caching conflicts with Node retries, as retries yield the same result.
->
-> To address this, you could use cached results only if not retried.
-{: .warning }
+{% hint style="danger" %}
+⚠️ Caching conflicts with Node retries, as retries yield the same result.
+
+To address this, you could use cached results only if not retried.
+{% endhint %}
 
 ```python
 from functools import lru_cache

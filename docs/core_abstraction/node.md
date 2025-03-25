@@ -32,10 +32,11 @@ A **Node** is the smallest building block. Each Node has 3 steps `prep->exec->po
    - Examples: _update DB, change states, log results_.
    - **Decide the next action** by returning a _string_ (`action = "default"` if _None_).
 
-> **Why 3 steps?** To enforce the principle of _separation of concerns_. The data storage and data processing are operated separately.
->
-> All steps are _optional_. E.g., you can only implement `prep` and `post` if you just need to process data.
-{: .note }
+{% hint style="info" %}
+**Why 3 steps?** To enforce the principle of _separation of concerns_. The data storage and data processing are operated separately.
+
+All steps are _optional_. E.g., you can only implement `prep` and `post` if you just need to process data.
+{% endhint %}
 
 ### Fault Tolerance & Retries
 
