@@ -116,7 +116,7 @@ def call_llm(prompt):
 ```
 
 {% hint style="danger" %}
-⚠️ Caching conflicts with Node retries, as retries yield the same result.
+Caching conflicts with Node retries, as retries yield the same result.
 
 To address this, you could use cached results only if not retried.
 {% endhint %}
