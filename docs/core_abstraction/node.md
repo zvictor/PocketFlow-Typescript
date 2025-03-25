@@ -46,6 +46,9 @@ You can **retry** `exec()` if it raises an exception via two parameters when def
 - `wait` (int): The time to wait (in **seconds**) before next retry. By default, `wait=0` (no waiting).
   `wait` is helpful when you encounter rate-limits or quota errors from your LLM provider and need to back off.
 
+{% tabs %}
+{% tab title="Python" %}
+
 ```python
 my_node = SummarizeFile(max_retries=3, wait=10)
 ```
@@ -106,3 +109,78 @@ action_result = summarize_node.run(shared)
 print("Action returned:", action_result)  # "default"
 print("Summary stored:", shared["summary"])
 ```
+
+{% endtab %}
+
+{% tab title="TypeScript" %}
+
+```typescript
+const myNode = new SummarizeFile({ maxRetries: 3, wait: 10 })
+```
+
+When an exception occurs in `exec()`, the Node automatically retries until:
+
+- It either succeeds, or
+- The Node has retried `maxRetries - 1` times already and fails on the last attempt.
+
+You can get the current retry times (0-based) from `this.curRetry`.
+
+```typescript
+class RetryNode extends Node {
+  exec(prepRes: any): any {
+    console.log(`Retry ${this.curRetry} times`)
+    throw new Error('Failed')
+  }
+}
+```
+
+### Graceful Fallback
+
+To **gracefully handle** the exception (after all retries) rather than raising it, override:
+
+```typescript
+execFallback(prepRes: any, exc: Error): any {
+  throw exc;
+}
+```
+
+### Example: Summarize file
+
+```typescript
+class SummarizeFile extends Node {
+  prep(shared: any): any {
+    return shared['data']
+  }
+
+  exec(prepRes: any): any {
+    if (!prepRes) {
+      return 'Empty file content'
+    }
+    const prompt = `Summarize this text in 10 words: ${prepRes}`
+    const summary = callLLM(prompt) // might fail
+    return summary
+  }
+
+  execFallback(prepRes: any, exc: Error): any {
+    // Provide a simple fallback instead of crashing
+    return 'There was an error processing your request.'
+  }
+
+  post(shared: any, prepRes: any, execRes: any): void {
+    shared['summary'] = execRes
+    // Return "default" by not returning
+  }
+}
+
+const summarizeNode = new SummarizeFile({ maxRetries: 3 })
+
+// node.run() calls prep->exec->post
+// If exec() fails, it retries up to 3 times before calling execFallback()
+const actionResult = summarizeNode.run(shared)
+
+console.log('Action returned:', actionResult) // "default"
+console.log('Summary stored:', shared['summary'])
+```
+
+{% endtab %}
+{% endtabs %}
