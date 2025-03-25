@@ -19,6 +19,9 @@ Agent is a powerful design pattern in which nodes can take dynamic actions based
 2. **Branching:** Use branching to connect each action node to an agent node. Use action to allow the agent to direct the [flow](../core_abstraction/flow.md) between nodes—and potentially loop back for multi-step.
 3. **Agent Node:** Provide a prompt to decide action—for example:
 
+{% tabs %}
+{% tab title="Python" %}
+
 ````python
 f"""
 ### CONTEXT
@@ -50,6 +53,43 @@ parameters:
 ```"""
 ````
 
+{% endtab %}
+
+{% tab title="TypeScript" %}
+
+```typescript
+;`### CONTEXT
+Task: ${taskDescription}
+Previous Actions: ${previousActions}
+Current State: ${currentState}
+
+### ACTION SPACE
+[1] search
+  Description: Use web search to get results
+  Parameters:
+    - query (string): What to search for
+
+[2] answer
+  Description: Conclude based on the results  
+  Parameters:
+    - result (string): Final answer to provide
+
+### NEXT ACTION
+Decide the next action based on the current context and available action space.
+Return your response in the following format:
+
+\`\`\`yaml
+thinking: |
+    <your step-by-step reasoning process>
+action: <action_name>
+parameters:
+    <parameter_name>: <parameter_value>
+\`\`\``
+```
+
+{% endtab %}
+{% endtabs %}
+
 The core of building **high-performance** and **reliable** agents boils down to:
 
 1. **Context Management:** Provide _relevant, minimal context._ For example, rather than including an entire chat history, retrieve the most relevant via [RAG](./rag.md). Even with larger context windows, LLMs still fall victim to ["lost in the middle"](https://arxiv.org/abs/2307.03172), overlooking mid-prompt content.
@@ -73,6 +113,9 @@ This agent:
 1. Decides whether to search or answer
 2. If searches, loops back to decide if more search needed
 3. Answers when enough context gathered
+
+{% tabs %}
+{% tab title="Python" %}
 
 ````python
 class DecideAction(Node):
@@ -110,7 +153,72 @@ search_term: search phrase if action is search
         if exec_res["action"] == "search":
             shared["search_term"] = exec_res["search_term"]
         return exec_res["action"]
+````
 
+{% endtab %}
+
+{% tab title="TypeScript" %}
+
+````typescript
+class DecideAction extends Node {
+  prep(shared: any): [string, string] {
+    const context = shared.context || 'No previous search'
+    const query = shared.query
+    return [query, context]
+  }
+
+  exec(inputs: [string, string]): any {
+    const [query, context] = inputs
+    const prompt = `
+Given input: ${query}
+Previous search results: ${context}
+Should I: 1) Search web for more info 2) Answer with current knowledge
+Output in yaml:
+\`\`\`yaml
+action: search/answer
+reason: why this action  
+search_term: search phrase if action is search
+\`\`\``
+
+    const resp = callLLM(prompt)
+    const yamlStr = resp.split('```yaml')[1].split('```')[0].trim()
+    const result = parseYaml(yamlStr)
+
+    if (typeof result !== 'object' || !result) {
+      throw new Error('Invalid YAML response')
+    }
+    if (!('action' in result)) {
+      throw new Error('Missing action in response')
+    }
+    if (!('reason' in result)) {
+      throw new Error('Missing reason in response')
+    }
+    if (!['search', 'answer'].includes(result.action)) {
+      throw new Error('Invalid action value')
+    }
+    if (result.action === 'search' && !('search_term' in result)) {
+      throw new Error('Missing search_term for search action')
+    }
+
+    return result
+  }
+
+  post(shared: any, prepRes: any, execRes: any): string {
+    if (execRes.action === 'search') {
+      shared.search_term = execRes.search_term
+    }
+    return execRes.action
+  }
+}
+````
+
+{% endtab %}
+{% endtabs %}
+
+{% tabs %}
+{% tab title="Python" %}
+
+```python
 class SearchWeb(Node):
     def prep(self, shared):
         return shared["search_term"]
@@ -124,7 +232,37 @@ class SearchWeb(Node):
             {"term": shared["search_term"], "result": exec_res}
         ]
         return "decide"
+```
 
+{% endtab %}
+
+{% tab title="TypeScript" %}
+
+```typescript
+class SearchWeb extends Node {
+  prep(shared: any): string {
+    return shared.search_term
+  }
+
+  exec(searchTerm: string): any {
+    return searchWeb(searchTerm)
+  }
+
+  post(shared: any, prepRes: any, execRes: any): string {
+    const prevSearches = shared.context || []
+    shared.context = [...prevSearches, { term: shared.search_term, result: execRes }]
+    return 'decide'
+  }
+}
+```
+
+{% endtab %}
+{% endtabs %}
+
+{% tabs %}
+{% tab title="Python" %}
+
+```python
 class DirectAnswer(Node):
     def prep(self, shared):
         return shared["query"], shared.get("context", "")
@@ -136,7 +274,37 @@ class DirectAnswer(Node):
     def post(self, shared, prep_res, exec_res):
        print(f"Answer: {exec_res}")
        shared["answer"] = exec_res
+```
 
+{% endtab %}
+
+{% tab title="TypeScript" %}
+
+```typescript
+class DirectAnswer extends Node {
+  prep(shared: any): [string, string] {
+    return [shared.query, shared.context || '']
+  }
+
+  exec(inputs: [string, string]): string {
+    const [query, context] = inputs
+    return callLLM(`Context: ${context}\nAnswer: ${query}`)
+  }
+
+  post(shared: any, prepRes: any, execRes: string): void {
+    console.log(`Answer: ${execRes}`)
+    shared.answer = execRes
+  }
+}
+```
+
+{% endtab %}
+{% endtabs %}
+
+{% tabs %}
+{% tab title="Python" %}
+
+```python
 # Connect nodes
 decide = DecideAction()
 search = SearchWeb()
@@ -144,8 +312,30 @@ answer = DirectAnswer()
 
 decide - "search" >> search
 decide - "answer" >> answer
-search - "decide" >> decide  # Loop back
+search - "decide" >> decide # Loop back
 
 flow = Flow(start=decide)
 flow.run({"query": "Who won the Nobel Prize in Physics 2024?"})
-````
+```
+
+{% endtab %}
+
+{% tab title="TypeScript" %}
+
+```typescript
+// Connect nodes
+const decide = new DecideAction()
+const search = new SearchWeb()
+const answer = new DirectAnswer()
+
+// Using operator overloading equivalents
+decide.minus('search').rshift(search)
+decide.minus('answer').rshift(answer)
+search.minus('decide').rshift(decide) // Loop back
+
+const flow = new Flow(decide)
+flow.run({ query: 'Who won the Nobel Prize in Physics 2024?' })
+```
+
+{% endtab %}
+{% endtabs %}
