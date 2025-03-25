@@ -58,7 +58,7 @@ parameters:
 {% tab title="TypeScript" %}
 
 ```typescript
-;`### CONTEXT
+`### CONTEXT
 Task: ${taskDescription}
 Previous Actions: ${previousActions}
 Current State: ${currentState}
