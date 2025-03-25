@@ -22,6 +22,9 @@ You usually need multiple _iterations_ to find the _sweet spot_. If the task has
 
 ### Example: Article Writing
 
+{% tabs %}
+{% tab title="Python" %}
+
 ```python
 class GenerateOutline(Node):
     def prep(self, shared): return shared["topic"]
@@ -50,5 +53,62 @@ writing_flow = Flow(start=outline)
 shared = {"topic": "AI Safety"}
 writing_flow.run(shared)
 ```
+
+{% endtab %}
+
+{% tab title="TypeScript" %}
+
+```typescript
+class GenerateOutline extends Node {
+  prep(shared: any): any {
+    return shared['topic']
+  }
+  exec(topic: string): any {
+    return callLLM(`Create a detailed outline for an article about ${topic}`)
+  }
+  post(shared: any, prepRes: any, execRes: any): void {
+    shared['outline'] = execRes
+  }
+}
+
+class WriteSection extends Node {
+  prep(shared: any): any {
+    return shared['outline']
+  }
+  exec(outline: string): any {
+    return callLLM(`Write content based on this outline: ${outline}`)
+  }
+  post(shared: any, prepRes: any, execRes: any): void {
+    shared['draft'] = execRes
+  }
+}
+
+class ReviewAndRefine extends Node {
+  prep(shared: any): any {
+    return shared['draft']
+  }
+  exec(draft: string): any {
+    return callLLM(`Review and improve this draft: ${draft}`)
+  }
+  post(shared: any, prepRes: any, execRes: any): void {
+    shared['final_article'] = execRes
+  }
+}
+
+// Connect nodes
+const outline = new GenerateOutline()
+const write = new WriteSection()
+const review = new ReviewAndRefine()
+
+outline.rshift(write).rshift(review)
+
+// Create and run flow
+const writingFlow = new Flow(outline)
+const shared = { topic: 'AI Safety' }
+writingFlow.run(shared)
+```
+
+{% endtab %}
+{% endtabs %}
 
 For _dynamic cases_, consider using [Agents](./agent.md).
