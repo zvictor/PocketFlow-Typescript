@@ -61,6 +61,9 @@ Agentic Coding should be a collaboration between Human System Design and Agent I
      ```
 
 3. **Utilities**: Based on the Flow Design, identify and implement necessary utility functions.
+   {% hint style="success" %}
+   **Sometimes, design Utilies before Flow:** For example, for an LLM project to automate a legacy system, the bottleneck will likely be the available interface to that system. Start by designing the hardest utilities for interfacing, and then build the flow around them.
+   {% endhint %}
 
    - Think of your AI system as the brain. It needs a body—these _external utility functions_—to interact with the real world:
        <div align="center"><img src="https://github.com/the-pocket/.github/raw/main/assets/utility.png?raw=true" width="400"/></div>
@@ -78,26 +81,56 @@ Agentic Coding should be a collaboration between Human System Design and Agent I
      - `necessity`: Used by the second node to embed text
    - Example utility implementation:
 
-   ```python
-   # utils/call_llm.py
-   from openai import OpenAI
+{% tabs %}
+{% tab title="Python" %}
 
-   def call_llm(prompt):
-       client = OpenAI(api_key="YOUR_API_KEY_HERE")
-       r = client.chat.completions.create(
-           model="gpt-4o",
-           messages=[{"role": "user", "content": prompt}]
-       )
-       return r.choices[0].message.content
+```python
+# utils/call_llm.py
+from openai import OpenAI
 
-   if __name__ == "__main__":
-       prompt = "What is the meaning of life?"
-       print(call_llm(prompt))
-   ```
+def call_llm(prompt):
+    client = OpenAI(api_key="YOUR_API_KEY_HERE")
+    r = client.chat.completions.create(
+        model="gpt-4o",
+        messages=[{"role": "user", "content": prompt}]
+    )
+    return r.choices[0].message.content
 
-   {% hint style="success" %}
-   **Sometimes, design Utilies before Flow:** For example, for an LLM project to automate a legacy system, the bottleneck will likely be the available interface to that system. Start by designing the hardest utilities for interfacing, and then build the flow around them.
-   {% endhint %}
+if __name__ == "__main__":
+    prompt = "What is the meaning of life?"
+    print(call_llm(prompt))
+```
+
+{% endtab %}
+
+{% tab title="TypeScript" %}
+
+```typescript
+// utils/callLLM.ts
+import OpenAI from 'openai'
+
+export async function callLLM(prompt: string): Promise<string> {
+  const openai = new OpenAI({
+    apiKey: 'YOUR_API_KEY_HERE',
+  })
+
+  const response = await openai.chat.completions.create({
+    model: 'gpt-4o',
+    messages: [{ role: 'user', content: prompt }],
+  })
+
+  return response.choices[0]?.message?.content || ''
+}
+
+// Example usage
+;(async () => {
+  const prompt = 'What is the meaning of life?'
+  console.log(await callLLM(prompt))
+})()
+```
+
+{% endtab %}
+{% endtabs %}
 
 4. **Node Design**: Plan how each node will read and write data, and use utility functions.
 
@@ -173,76 +206,182 @@ my_project/
   - Each file should also include a `main()` function to try that API call
 - **`nodes.py`**: Contains all the node definitions.
 
-  ```python
-  # nodes.py
-  from pocketflow import Node
-  from utils.call_llm import call_llm
+{% tabs %}
+{% tab title="Python" %}
 
-  class GetQuestionNode(Node):
-      def exec(self, _):
-          # Get question directly from user input
-          user_question = input("Enter your question: ")
-          return user_question
+```python
+# nodes.py
+from pocketflow import Node
+from utils.call_llm import call_llm
 
-      def post(self, shared, prep_res, exec_res):
-          # Store the user's question
-          shared["question"] = exec_res
-          return "default"  # Go to the next node
+class GetQuestionNode(Node):
+    def exec(self, _):
+        # Get question directly from user input
+        user_question = input("Enter your question: ")
+        return user_question
 
-  class AnswerNode(Node):
-      def prep(self, shared):
-          # Read question from shared
-          return shared["question"]
+    def post(self, shared, prep_res, exec_res):
+        # Store the user's question
+        shared["question"] = exec_res
+        return "default"  # Go to the next node
 
-      def exec(self, question):
-          # Call LLM to get the answer
-          return call_llm(question)
+class AnswerNode(Node):
+    def prep(self, shared):
+        # Read question from shared
+        return shared["question"]
 
-      def post(self, shared, prep_res, exec_res):
-          # Store the answer in shared
-          shared["answer"] = exec_res
-  ```
+    def exec(self, question):
+        # Call LLM to get the answer
+        return call_llm(question)
+
+    def post(self, shared, prep_res, exec_res):
+        # Store the answer in shared
+        shared["answer"] = exec_res
+```
+
+{% endtab %}
+
+{% tab title="TypeScript" %}
+
+```typescript
+// nodes.ts
+import { Node } from 'pocketflow'
+import { callLLM } from './utils/callLLM'
+
+class GetQuestionNode extends Node {
+  exec(_: any): string {
+    // Get question directly from user input
+    const userQuestion = 'What is the meaning of life?'
+    return userQuestion
+  }
+
+  post(shared: any, _prepRes: any, execRes: string): string {
+    // Store the user's question
+    shared['question'] = execRes
+    return 'default' // Go to the next node
+  }
+}
+
+class AnswerNode extends Node {
+  prep(shared: any): string {
+    // Read question from shared
+    return shared['question']
+  }
+
+  exec(question: string): Promise<string> {
+    // Call LLM to get the answer
+    return callLLM(question)
+  }
+
+  post(shared: any, _prepRes: any, execRes: string): void {
+    // Store the answer in shared
+    shared['answer'] = execRes
+  }
+}
+```
+
+{% endtab %}
+{% endtabs %}
 
 - **`flow.py`**: Implements functions that create flows by importing node definitions and connecting them.
 
-  ```python
-  # flow.py
-  from pocketflow import Flow
-  from nodes import GetQuestionNode, AnswerNode
+{% tabs %}
+{% tab title="Python" %}
 
-  def create_qa_flow():
-      """Create and return a question-answering flow."""
-      # Create nodes
-      get_question_node = GetQuestionNode()
-      answer_node = AnswerNode()
+```python
+# flow.py
+from pocketflow import Flow
+from nodes import GetQuestionNode, AnswerNode
 
-      # Connect nodes in sequence
-      get_question_node >> answer_node
+def create_qa_flow():
+    """Create and return a question-answering flow."""
+    # Create nodes
+    get_question_node = GetQuestionNode()
+    answer_node = AnswerNode()
 
-      # Create flow starting with input node
-      return Flow(start=get_question_node)
-  ```
+    # Connect nodes in sequence
+    get_question_node >> answer_node
+
+    # Create flow starting with input node
+    return Flow(start=get_question_node)
+```
+
+{% endtab %}
+
+{% tab title="TypeScript" %}
+
+```typescript
+// flow.ts
+import { Flow } from 'pocketflow'
+import { AnswerNode, GetQuestionNode } from './nodes'
+
+export function createQaFlow(): Flow {
+  // Create nodes
+  const getQuestionNode = new GetQuestionNode()
+  const answerNode = new AnswerNode()
+
+  // Connect nodes in sequence
+  getQuestionNode.rshift(answerNode)
+
+  // Create flow starting with input node
+  return new Flow(getQuestionNode)
+}
+```
+
+{% endtab %}
+{% endtabs %}
 
 - **`main.py`**: Serves as the project's entry point.
 
-  ```python
-  # main.py
-  from flow import create_qa_flow
+{% tabs %}
+{% tab title="Python" %}
 
-  # Example main function
-  # Please replace this with your own main function
-  def main():
-      shared = {
-          "question": None,  # Will be populated by GetQuestionNode from user input
-          "answer": None     # Will be populated by AnswerNode
-      }
+```python
+# main.py
+from flow import create_qa_flow
 
-      # Create the flow and run it
-      qa_flow = create_qa_flow()
-      qa_flow.run(shared)
-      print(f"Question: {shared['question']}")
-      print(f"Answer: {shared['answer']}")
+# Example main function
+# Please replace this with your own main function
+def main():
+    shared = {
+        "question": None,  # Will be populated by GetQuestionNode from user input
+        "answer": None     # Will be populated by AnswerNode
+    }
 
-  if __name__ == "__main__":
-      main()
-  ```
+    # Create the flow and run it
+    qa_flow = create_qa_flow()
+    qa_flow.run(shared)
+    print(f"Question: {shared['question']}")
+    print(f"Answer: {shared['answer']}")
+
+if __name__ == "__main__":
+    main()
+```
+
+{% endtab %}
+
+{% tab title="TypeScript" %}
+
+```typescript
+// main.ts
+import { createQaFlow } from './flow'
+
+// Example main function
+async function main() {
+  const shared = {
+    question: null as string | null, // Will be populated by GetQuestionNode
+    answer: null as string | null, // Will be populated by AnswerNode
+  }
+
+  // Create the flow and run it
+  const qaFlow = createQaFlow()
+  await qaFlow.run(shared)
+  console.log(`Question: ${shared.question}`)
+  console.log(`Answer: ${shared.answer}`)
+}
+
+main().catch(console.error)
+```
+
+{% endtab %}
+{% endtabs %}
