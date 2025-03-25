@@ -17,6 +17,9 @@ nav_order: 5
 
 ### Example
 
+{% tabs %}
+{% tab title="Python" %}
+
 ```python
 class SummarizeThenVerify(AsyncNode):
     async def prep_async(self, shared):
@@ -53,3 +56,53 @@ async def main():
 
 asyncio.run(main())
 ```
+
+{% endtab %}
+
+{% tab title="TypeScript" %}
+
+```typescript
+class SummarizeThenVerify extends AsyncNode {
+  async prepAsync(shared: any): Promise<string> {
+    // Example: read a file asynchronously
+    const docText = await readFileAsync(shared['doc_path'])
+    return docText
+  }
+
+  async execAsync(prepRes: string): Promise<string> {
+    // Example: async LLM call
+    const summary = await callLlmAsync(`Summarize: ${prepRes}`)
+    return summary
+  }
+
+  async postAsync(shared: any, prepRes: string, execRes: string): Promise<string> {
+    // Example: wait for user feedback
+    const decision = await gatherUserFeedback(execRes)
+    if (decision === 'approve') {
+      shared['summary'] = execRes
+      return 'approve'
+    }
+    return 'deny'
+  }
+}
+
+const summarizeNode = new SummarizeThenVerify()
+const finalNode = new Finalize()
+
+// Define transitions
+summarizeNode.minus('approve').rshift(finalNode)
+summarizeNode.minus('deny').rshift(summarizeNode) // retry
+
+const flow = new AsyncFlow(summarizeNode)
+
+async function main() {
+  const shared = { doc_path: 'document.txt' }
+  await flow.runAsync(shared)
+  console.log('Final Summary:', shared['summary'])
+}
+
+main().catch(console.error)
+```
+
+{% endtab %}
+{% endtabs %}
