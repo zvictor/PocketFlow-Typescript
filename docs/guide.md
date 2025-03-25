@@ -34,6 +34,10 @@ Agentic Coding should be a collaboration between Human System Design and Agent I
 
 2. **Flow Design**: Outline at a high level, describe how your AI system orchestrates nodes.
 
+   {% hint style="warning" %}
+   **If Humans can't specify the flow, AI Agents can't automate it!** Before building an LLM system, thoroughly understand the problem and potential solution by manually solving example inputs to develop intuition.  
+   {% endhint %}
+
    - Identify applicable design patterns (e.g., [Map Reduce](./design_pattern/mapreduce.md), [Agent](./design_pattern/agent.md), [RAG](./design_pattern/rag.md)).
      - For each node in the flow, start with a high-level one-line description of what it does.
      - If using **Map Reduce**, specify how to map (what to split) and how to reduce (how to combine).
@@ -56,10 +60,6 @@ Agentic Coding should be a collaboration between Human System Design and Agent I
          process --> endNode[End]
      ```
 
-     {% hint style="success" %}
-     **If Humans can't specify the flow, AI Agents can't automate it!** Before building an LLM system, thoroughly understand the problem and potential solution by manually solving example inputs to develop intuition.  
-     {% endhint %}
-
 3. **Utilities**: Based on the Flow Design, identify and implement necessary utility functions.
 
    - Think of your AI system as the brain. It needs a body—these _external utility functions_—to interact with the real world:
@@ -78,26 +78,26 @@ Agentic Coding should be a collaboration between Human System Design and Agent I
      - `necessity`: Used by the second node to embed text
    - Example utility implementation:
 
-     ```python
-     # utils/call_llm.py
-     from openai import OpenAI
+   ```python
+   # utils/call_llm.py
+   from openai import OpenAI
 
-     def call_llm(prompt):
-         client = OpenAI(api_key="YOUR_API_KEY_HERE")
-         r = client.chat.completions.create(
-             model="gpt-4o",
-             messages=[{"role": "user", "content": prompt}]
-         )
-         return r.choices[0].message.content
+   def call_llm(prompt):
+       client = OpenAI(api_key="YOUR_API_KEY_HERE")
+       r = client.chat.completions.create(
+           model="gpt-4o",
+           messages=[{"role": "user", "content": prompt}]
+       )
+       return r.choices[0].message.content
 
-     if __name__ == "__main__":
-         prompt = "What is the meaning of life?"
-         print(call_llm(prompt))
-     ```
+   if __name__ == "__main__":
+       prompt = "What is the meaning of life?"
+       print(call_llm(prompt))
+   ```
 
-     {% hint style="success" %}
-     **Sometimes, design Utilies before Flow:** For example, for an LLM project to automate a legacy system, the bottleneck will likely be the available interface to that system. Start by designing the hardest utilities for interfacing, and then build the flow around them.
-     {% endhint %}
+   {% hint style="success" %}
+   **Sometimes, design Utilies before Flow:** For example, for an LLM project to automate a legacy system, the bottleneck will likely be the available interface to that system. Start by designing the hardest utilities for interfacing, and then build the flow around them.
+   {% endhint %}
 
 4. **Node Design**: Plan how each node will read and write data, and use utility functions.
 
@@ -140,11 +140,11 @@ Agentic Coding should be a collaboration between Human System Design and Agent I
      - **Prompt Engineering**: Use clear, specific instructions with examples to reduce ambiguity.
      - **In-Context Learning**: Provide robust examples for tasks that are difficult to specify with instructions alone.
 
-     {% hint style="success" %}
-     **You'll likely iterate a lot!** Expect to repeat Steps 3–6 hundreds of times.
+{% hint style="success" %}
+**You'll likely iterate a lot!** Expect to repeat Steps 3–6 hundreds of times.
 
-     <div align="center"><img src="https://github.com/the-pocket/.github/raw/main/assets/success.png?raw=true" width="400"/></div>
-     {% endhint %}
+<div align="center"><img src="https://github.com/the-pocket/.github/raw/main/assets/success.png?raw=true" width="400"/></div>
+{% endhint %}
 
 7. **Reliability**
    - **Node Retries**: Add checks in the node `exec` to ensure outputs meet requirements, and consider increasing `max_retries` and `wait` times.
