@@ -32,11 +32,27 @@ A **Flow** begins with a **start** node. You call `Flow(start=some_node)` to spe
 
 Here's a minimal flow of two nodes in a chain:
 
+{% tabs %}
+{% tab title="Python" %}
+
 ```python
 node_a >> node_b
 flow = Flow(start=node_a)
 flow.run(shared)
 ```
+
+{% endtab %}
+
+{% tab title="TypeScript" %}
+
+```typescript
+node_a.rshift(node_b)
+const flow = new Flow(node_a)
+flow.run(shared)
+```
+
+{% endtab %}
+{% endtabs %}
 
 - When you run the flow, it executes `node_a`.
 - Suppose `node_a.post()` returns `"default"`.
@@ -53,6 +69,9 @@ Here's a simple expense approval flow that demonstrates branching and looping. T
 
 We can wire them like this:
 
+{% tabs %}
+{% tab title="Python" %}
+
 ```python
 # Define the flow connections
 review - "approved" >> payment        # If approved, process payment
@@ -64,6 +83,25 @@ payment >> finish  # After payment, finish the process
 
 flow = Flow(start=review)
 ```
+
+{% endtab %}
+
+{% tab title="TypeScript" %}
+
+```typescript
+// Define the flow connections
+review.minus('approved').rshift(payment) // If approved, process payment
+review.minus('needs_revision').rshift(revise) // If needs changes, go to revision
+review.minus('rejected').rshift(finish) // If rejected, finish the process
+
+revise.rshift(review) // After revision, go back for another review
+payment.rshift(finish) // After payment, finish the process
+
+const flow = new Flow(review)
+```
+
+{% endtab %}
+{% endtabs %}
 
 Let's see how it flows:
 
@@ -112,6 +150,9 @@ A **Flow** is also a **Node**, so it will run `prep()` and `post()`. However:
 
 Here's how to connect a flow to another node:
 
+{% tabs %}
+{% tab title="Python" %}
+
 ```python
 # Create a sub-flow
 node_a >> node_b
@@ -124,6 +165,25 @@ subflow >> node_c
 parent_flow = Flow(start=subflow)
 ```
 
+{% endtab %}
+
+{% tab title="TypeScript" %}
+
+```typescript
+// Create a sub-flow
+node_a.rshift(node_b)
+const subflow = new Flow(node_a)
+
+// Connect it to another node
+subflow.rshift(node_c)
+
+// Create the parent flow
+const parentFlow = new Flow(subflow)
+```
+
+{% endtab %}
+{% endtabs %}
+
 When `parent_flow.run()` executes:
 
 1. It starts `subflow`
@@ -133,6 +193,9 @@ When `parent_flow.run()` executes:
 ### Example: Order Processing Pipeline
 
 Here's a practical example that breaks down order processing into nested flows:
+
+{% tabs %}
+{% tab title="Python" %}
 
 ```python
 # Payment processing sub-flow
@@ -156,6 +219,36 @@ order_pipeline = Flow(start=payment_flow)
 # Run the entire pipeline
 order_pipeline.run(shared_data)
 ```
+
+{% endtab %}
+
+{% tab title="TypeScript" %}
+
+```typescript
+// Payment processing sub-flow
+validate_payment.rshift(process_payment).rshift(payment_confirmation)
+const paymentFlow = new Flow(validate_payment)
+
+// Inventory sub-flow
+check_stock.rshift(reserve_items).rshift(update_inventory)
+const inventoryFlow = new Flow(check_stock)
+
+// Shipping sub-flow
+create_label.rshift(assign_carrier).rshift(schedule_pickup)
+const shippingFlow = new Flow(create_label)
+
+// Connect the flows into a main order pipeline
+paymentFlow.rshift(inventoryFlow).rshift(shippingFlow)
+
+// Create the master flow
+const orderPipeline = new Flow(paymentFlow)
+
+// Run the entire pipeline
+orderPipeline.run(shared_data)
+```
+
+{% endtab %}
+{% endtabs %}
 
 This creates a clean separation of concerns while maintaining a clear execution path:
 
