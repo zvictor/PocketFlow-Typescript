@@ -13,11 +13,12 @@ Many real-world tasks are too complex for one LLM call. The solution is to **Tas
   <img src="https://github.com/the-pocket/.github/raw/main/assets/workflow.png?raw=true" width="400"/>
 </div>
 
-> - You don't want to make each task **too coarse**, because it may be _too complex for one LLM call_.
-> - You don't want to make each task **too granular**, because then _the LLM call doesn't have enough context_ and results are _not consistent across nodes_.
->
-> You usually need multiple _iterations_ to find the _sweet spot_. If the task has too many _edge cases_, consider using [Agents](./agent.md).
-{: .best-practice }
+{% hint style="success" %}
+You don't want to make each task **too coarse**, because it may be _too complex for one LLM call_.
+You don't want to make each task **too granular**, because then _the LLM call doesn't have enough context_ and results are _not consistent across nodes_.
+
+You usually need multiple _iterations_ to find the _sweet spot_. If the task has too many _edge cases_, consider using [Agents](./agent.md).
+{% endhint %}
 
 ### Example: Article Writing
 

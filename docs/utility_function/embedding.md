@@ -9,10 +9,11 @@ nav_order: 5
 
 Below you will find an overview table of various text embedding APIs, along with example Python code.
 
-> Embedding is more a micro optimization, compared to the Flow Design.
->
-> It's recommended to start with the most convenient one and optimize later.
-{: .best-practice }
+{% hint style="success" %}
+Embedding is more a micro optimization, compared to the Flow Design.
+
+It's recommended to start with the most convenient one and optimize later.
+{% endhint %}
 
 | **API**              | **Free Tier**                           | **Pricing Model**                   | **Docs**                                                                                                                  |
 | -------------------- | --------------------------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
