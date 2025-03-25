@@ -19,6 +19,9 @@ Most of time, you don't need Multi-Agents. Start with a simple solution first.
 Here's a simple example showing how to implement agent communication using `asyncio.Queue`.
 The agent listens for messages, processes them, and continues listening:
 
+{% tabs %}
+{% tab title="Python" %}
+
 ```python
 class AgentNode(AsyncNode):
     async def prep_async(self, _):
@@ -62,6 +65,82 @@ async def main():
 asyncio.run(main())
 ```
 
+{% endtab %}
+
+{% tab title="TypeScript" %}
+
+```typescript
+class AgentNode extends AsyncNode {
+  async prepAsync(_: any) {
+    const messageQueue = this.params.messages as AsyncQueue<string>
+    const message = await messageQueue.get()
+    console.log(`Agent received: ${message}`)
+    return message
+  }
+}
+
+// Create node and flow
+const agent = new AgentNode()
+agent.rshift(agent) // connect to self
+const flow = new AsyncFlow(agent)
+
+// Create heartbeat sender
+async function sendSystemMessages(messageQueue: AsyncQueue<string>) {
+  let counter = 0
+  const messages = [
+    'System status: all systems operational',
+    'Memory usage: normal',
+    'Network connectivity: stable',
+    'Processing load: optimal',
+  ]
+
+  while (true) {
+    const message = `${messages[counter % messages.length]} | timestamp_${counter}`
+    await messageQueue.put(message)
+    counter++
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+  }
+}
+
+async function main() {
+  const messageQueue = new AsyncQueue<string>()
+  const shared = {}
+  flow.setParams({ messages: messageQueue })
+
+  // Run both coroutines
+  await Promise.all([flow.runAsync(shared), sendSystemMessages(messageQueue)])
+}
+
+// Simple AsyncQueue implementation for TypeScript
+class AsyncQueue<T> {
+  private queue: T[] = []
+  private waiting: ((value: T) => void)[] = []
+
+  async get(): Promise<T> {
+    if (this.queue.length > 0) {
+      return this.queue.shift()!
+    }
+    return new Promise((resolve) => {
+      this.waiting.push(resolve)
+    })
+  }
+
+  async put(item: T): Promise<void> {
+    if (this.waiting.length > 0) {
+      const resolve = this.waiting.shift()!
+      resolve(item)
+    } else {
+      this.queue.push(item)
+    }
+  }
+}
+
+main().catch(console.error)
+```
+
+{% endtab %}
+{% endtabs %}
+
 The output:
 
 ```
@@ -75,6 +154,9 @@ Agent received: Processing load: optimal | timestamp_3
 
 Here's a more complex example where two agents play the word-guessing game Taboo.
 One agent provides hints while avoiding forbidden words, and another agent tries to guess the target word:
+
+{% tabs %}
+{% tab title="Python" %}
 
 ```python
 class AsyncHinter(AsyncNode):
@@ -164,6 +246,116 @@ async def main():
 
 asyncio.run(main())
 ```
+
+{% endtab %}
+
+{% tab title="TypeScript" %}
+
+```typescript
+class AsyncHinter extends AsyncNode {
+  async prepAsync(shared: any) {
+    const guess = await shared.hinterQueue.get()
+    if (guess === 'GAME_OVER') {
+      return null
+    }
+    return [shared.targetWord, shared.forbiddenWords, shared.pastGuesses || []]
+  }
+
+  async execAsync(inputs: any) {
+    if (inputs === null) return null
+    const [target, forbidden, pastGuesses] = inputs
+    let prompt = `Generate hint for '${target}'\nForbidden words: ${forbidden}`
+    if (pastGuesses.length > 0) {
+      prompt += `\nPrevious wrong guesses: ${pastGuesses}\nMake hint more specific.`
+    }
+    prompt += '\nUse at most 5 words.'
+
+    const hint = await callLLM(prompt)
+    console.log(`\nHinter: Here's your hint - ${hint}`)
+    return hint
+  }
+
+  async postAsync(shared: any, prepRes: any, execRes: any) {
+    if (execRes === null) return 'end'
+    await shared.guesserQueue.put(execRes)
+    return 'continue'
+  }
+}
+
+class AsyncGuesser extends AsyncNode {
+  async prepAsync(shared: any) {
+    const hint = await shared.guesserQueue.get()
+    return [hint, shared.pastGuesses || []]
+  }
+
+  async execAsync(inputs: any) {
+    const [hint, pastGuesses] = inputs
+    const prompt = `Given hint: ${hint}, past wrong guesses: ${pastGuesses}, make a new guess. Directly reply a single word:`
+    const guess = await callLLM(prompt)
+    console.log(`Guesser: I guess it's - ${guess}`)
+    return guess
+  }
+
+  async postAsync(shared: any, prepRes: any, execRes: any) {
+    if (execRes.toLowerCase() === shared.targetWord.toLowerCase()) {
+      console.log('Game Over - Correct guess!')
+      await shared.hinterQueue.put('GAME_OVER')
+      return 'end'
+    }
+
+    if (!shared.pastGuesses) {
+      shared.pastGuesses = []
+    }
+    shared.pastGuesses.push(execRes)
+
+    await shared.hinterQueue.put(execRes)
+    return 'continue'
+  }
+}
+
+async function main() {
+  // Set up game
+  const shared = {
+    targetWord: 'nostalgia',
+    forbiddenWords: ['memory', 'past', 'remember', 'feeling', 'longing'],
+    hinterQueue: new AsyncQueue<string>(),
+    guesserQueue: new AsyncQueue<string>(),
+  }
+
+  console.log('Game starting!')
+  console.log(`Target word: ${shared.targetWord}`)
+  console.log(`Forbidden words: ${shared.forbiddenWords}`)
+
+  // Initialize by sending empty guess to hinter
+  await shared.hinterQueue.put('')
+
+  // Create nodes and flows
+  const hinter = new AsyncHinter()
+  const guesser = new AsyncGuesser()
+
+  // Set up flows
+  const hinterFlow = new AsyncFlow(hinter)
+  const guesserFlow = new AsyncFlow(guesser)
+
+  // Connect nodes to themselves
+  hinter.minus('continue').rshift(hinter)
+  guesser.minus('continue').rshift(guesser)
+
+  // Run both agents concurrently
+  await Promise.all([hinterFlow.runAsync(shared), guesserFlow.runAsync(shared)])
+}
+
+// Mock LLM call for TypeScript
+async function callLLM(prompt: string): Promise<string> {
+  // In a real implementation, this would call an actual LLM API
+  return 'Mock LLM response'
+}
+
+main().catch(console.error)
+```
+
+{% endtab %}
+{% endtabs %}
 
 The Output:
 
