@@ -1,7 +1,7 @@
 ---
 layout: default
-title: "(Advanced) Async"
-parent: "Core Abstraction"
+title: '(Advanced) Async'
+parent: 'Core Abstraction'
 nav_order: 5
 ---
 

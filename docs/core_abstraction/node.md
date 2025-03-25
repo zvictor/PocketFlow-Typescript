@@ -1,7 +1,7 @@
 ---
 layout: default
-title: "Node"
-parent: "Core Abstraction"
+title: 'Node'
+parent: 'Core Abstraction'
 nav_order: 1
 ---
 

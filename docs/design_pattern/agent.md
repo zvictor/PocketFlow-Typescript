@@ -1,7 +1,7 @@
 ---
 layout: default
-title: "Agent"
-parent: "Design Pattern"
+title: 'Agent'
+parent: 'Design Pattern'
 nav_order: 1
 ---
 
@@ -58,7 +58,7 @@ parameters:
 {% tab title="TypeScript" %}
 
 ```typescript
-`### CONTEXT
+;`### CONTEXT
 Task: ${taskDescription}
 Previous Actions: ${previousActions}
 Current State: ${currentState}

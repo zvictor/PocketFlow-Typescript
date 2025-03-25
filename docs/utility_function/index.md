@@ -1,6 +1,6 @@
 ---
 layout: default
-title: "Utility Function"
+title: 'Utility Function'
 nav_order: 4
 has_children: true
 ---

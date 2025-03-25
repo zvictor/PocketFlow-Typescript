@@ -1,7 +1,7 @@
 ---
 layout: default
-title: "(Advanced) Parallel"
-parent: "Core Abstraction"
+title: '(Advanced) Parallel'
+parent: 'Core Abstraction'
 nav_order: 6
 ---
 

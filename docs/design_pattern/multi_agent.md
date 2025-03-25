@@ -1,7 +1,7 @@
 ---
 layout: default
-title: "(Advanced) Multi-Agents"
-parent: "Design Pattern"
+title: '(Advanced) Multi-Agents'
+parent: 'Design Pattern'
 nav_order: 6
 ---
 

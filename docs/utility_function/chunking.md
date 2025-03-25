@@ -1,7 +1,7 @@
 ---
 layout: default
-title: "Text Chunking"
-parent: "Utility Function"
+title: 'Text Chunking'
+parent: 'Utility Function'
 nav_order: 4
 ---
 

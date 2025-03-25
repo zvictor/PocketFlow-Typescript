@@ -14,9 +14,6 @@
       "~/*": ["./*"]
     }
   },
-  "include": [
-    "**/*.ts",
-    "trigger.config.ts"
-  ],
+  "include": ["**/*.ts", "trigger.config.ts"],
   "exclude": ["node_modules"]
 }

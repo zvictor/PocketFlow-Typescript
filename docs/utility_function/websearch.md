@@ -1,7 +1,7 @@
 ---
 layout: default
-title: "Web Search"
-parent: "Utility Function"
+title: 'Web Search'
+parent: 'Utility Function'
 nav_order: 3
 ---
 

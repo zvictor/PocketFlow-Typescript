@@ -1,7 +1,7 @@
 ---
 layout: default
-title: "Viz and Debug"
-parent: "Utility Function"
+title: 'Viz and Debug'
+parent: 'Utility Function'
 nav_order: 2
 ---
 
