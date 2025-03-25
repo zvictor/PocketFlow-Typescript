@@ -2,7 +2,9 @@ type Action = string
 type Params = Record<string, any>
 type Successors = Record<Action, BaseNode>
 
-class BaseNode {
+const DEFAULT_ACTION = 'default'
+
+export class BaseNode {
   params: Params = {}
   successors: Successors = {}
   curRetry = 0
@@ -12,12 +14,20 @@ class BaseNode {
     return this
   }
 
-  addSuccessor(node: BaseNode, action: Action = 'default'): BaseNode {
+  next(node: BaseNode, action: Action = DEFAULT_ACTION): BaseNode {
     if (action in this.successors) {
       console.warn(`Overwriting successor for action '${action}'`)
     }
     this.successors[action] = node
     return node
+  }
+
+  on(action: string): ConditionalTransition {
+    if (typeof action !== 'string') {
+      throw new TypeError('Action must be a string')
+    }
+
+    return new ConditionalTransition(this, action)
   }
 
   prep(shared: any): any {}
@@ -40,18 +50,6 @@ class BaseNode {
     }
     return this._run(shared)
   }
-
-  // Operator overloading equivalents
-  rshift(other: BaseNode): BaseNode {
-    return this.addSuccessor(other)
-  }
-
-  minus(action: string): ConditionalTransition {
-    if (typeof action !== 'string') {
-      throw new TypeError('Action must be a string')
-    }
-    return new ConditionalTransition(this, action)
-  }
 }
 
 class ConditionalTransition {
@@ -60,12 +58,12 @@ class ConditionalTransition {
     private action: string,
   ) {}
 
-  rshift(tgt: BaseNode): BaseNode {
-    return this.src.addSuccessor(tgt, this.action)
+  next(tgt: BaseNode): BaseNode {
+    return this.src.next(tgt, this.action)
   }
 }
 
-class Node extends BaseNode {
+export class Node extends BaseNode {
   constructor(
     public maxRetries = 1,
     public wait = 0,
@@ -100,19 +98,19 @@ class Node extends BaseNode {
   }
 }
 
-class BatchNode extends Node {
+export class BatchNode extends Node {
   protected _exec(items: any[]): any[] {
     return (items || []).map((i) => super._exec(i))
   }
 }
 
-class Flow extends BaseNode {
+export class Flow extends BaseNode {
   constructor(public start: BaseNode) {
     super()
   }
 
   getNextNode(curr: BaseNode, action?: Action): BaseNode | null {
-    const next = curr.successors[action || 'default']
+    const next = curr.successors[action || DEFAULT_ACTION]
     if (!next && Object.keys(curr.successors).length > 0) {
       console.warn(`Flow ends: '${action}' not found in ${Object.keys(curr.successors)}`)
     }
@@ -150,7 +148,7 @@ class Flow extends BaseNode {
   }
 }
 
-class BatchFlow extends Flow {
+export class BatchFlow extends Flow {
   _run(shared: any): any {
     const pr = this.prep(shared) || []
     let result = null
@@ -162,7 +160,7 @@ class BatchFlow extends Flow {
 }
 
 // Async variants
-class AsyncNode extends Node {
+export class AsyncNode extends Node {
   prep(shared: any): never {
     throw new Error('Use prepAsync.')
   }
@@ -219,7 +217,7 @@ class AsyncNode extends Node {
 
 // In TypeScript, we can't directly inherit from multiple classes like in Python
 // So we implement the BatchNode functionality in AsyncBatchNode
-class AsyncBatchNode extends AsyncNode {
+export class AsyncBatchNode extends AsyncNode {
   async prepAsync(shared: any): Promise<any[]> {
     return super.prepAsync(shared)
   }
@@ -242,7 +240,7 @@ class AsyncBatchNode extends AsyncNode {
   }
 }
 
-class AsyncParallelBatchNode extends AsyncNode {
+export class AsyncParallelBatchNode extends AsyncNode {
   async prepAsync(shared: any): Promise<any[]> {
     return super.prepAsync(shared)
   }
@@ -264,7 +262,7 @@ class AsyncParallelBatchNode extends AsyncNode {
   }
 }
 
-class AsyncFlow extends Flow {
+export class AsyncFlow extends Flow {
   prep(shared: any): never {
     throw new Error('Use prepAsync.')
   }
@@ -325,7 +323,7 @@ class AsyncFlow extends Flow {
   }
 }
 
-class AsyncBatchFlow extends AsyncFlow {
+export class AsyncBatchFlow extends AsyncFlow {
   async prepAsync(shared: any): Promise<any> {}
   async postAsync(shared: any, prepRes: any, execRes: any): Promise<any> {}
   protected async _runAsync(shared: any): Promise<any> {
@@ -338,7 +336,7 @@ class AsyncBatchFlow extends AsyncFlow {
   }
 }
 
-class AsyncParallelBatchFlow extends AsyncFlow {
+export class AsyncParallelBatchFlow extends AsyncFlow {
   async prepAsync(shared: any): Promise<any[]> {
     return []
   }
@@ -357,18 +355,4 @@ class AsyncParallelBatchFlow extends AsyncFlow {
     const lastResult = results.length > 0 ? results[results.length - 1] : null
     return await this.postAsync(shared, pr, lastResult)
   }
-}
-
-export {
-  BaseNode,
-  Node,
-  BatchNode,
-  Flow,
-  BatchFlow,
-  AsyncNode,
-  AsyncBatchNode,
-  AsyncFlow,
-  AsyncBatchFlow,
-  AsyncParallelBatchNode,
-  AsyncParallelBatchFlow,
 }
