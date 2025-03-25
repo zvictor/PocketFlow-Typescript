@@ -22,6 +22,9 @@ You first break down the task using [BatchNode](../core_abstraction/batch.md) in
 
 ### Example: Document Summarization
 
+{% tabs %}
+{% tab title="Python" %}
+
 ```python
 class SummarizeAllFiles(BatchNode):
     def prep(self, shared):
@@ -69,6 +72,70 @@ flow.run(shared)
 print("Individual Summaries:", shared["file_summaries"])
 print("\nFinal Summary:\n", shared["all_files_summary"])
 ```
+
+{% endtab %}
+
+{% tab title="TypeScript" %}
+
+```typescript
+class SummarizeAllFiles extends BatchNode {
+  prep(shared: any): [string, string][] {
+    const filesDict = shared.files // e.g. 10 files
+    return Object.entries(filesDict) // [["file1.txt", "aaa..."], ["file2.txt", "bbb..."], ...]
+  }
+
+  exec(oneFile: [string, string]): [string, string] {
+    const [filename, fileContent] = oneFile
+    const summaryText = callLLM(`Summarize the following file:\n${fileContent}`)
+    return [filename, summaryText]
+  }
+
+  post(shared: any, prepRes: any, execResList: [string, string][]): void {
+    shared.file_summaries = Object.fromEntries(execResList)
+  }
+}
+
+class CombineSummaries extends Node {
+  prep(shared: any): Record<string, string> {
+    return shared.file_summaries
+  }
+
+  exec(fileSummaries: Record<string, string>): string {
+    // format as: "File1: summary\nFile2: summary...\n"
+    const textList: string[] = []
+    for (const [fname, summ] of Object.entries(fileSummaries)) {
+      textList.push(`${fname} summary:\n${summ}\n`)
+    }
+    const bigText = textList.join('\n---\n')
+
+    return callLLM(`Combine these file summaries into one final summary:\n${bigText}`)
+  }
+
+  post(shared: any, prepRes: any, finalSummary: string): void {
+    shared.all_files_summary = finalSummary
+  }
+}
+
+const batchNode = new SummarizeAllFiles()
+const combineNode = new CombineSummaries()
+batchNode.rshift(combineNode)
+
+const flow = new Flow(batchNode)
+
+const shared = {
+  files: {
+    'file1.txt': 'Alice was beginning to get very tired of sitting by her sister...',
+    'file2.txt': 'Some other interesting text ...',
+    // ...
+  },
+}
+flow.run(shared)
+console.log('Individual Summaries:', shared.file_summaries)
+console.log('\nFinal Summary:\n', shared.all_files_summary)
+```
+
+{% endtab %}
+{% endtabs %}
 
 {% hint style="info" %}
 **Performance Tip**: The example above works sequentially. You can speed up the map phase by running it in parallel. See [(Advanced) Parallel](../core_abstraction/parallel.md) for more details.
