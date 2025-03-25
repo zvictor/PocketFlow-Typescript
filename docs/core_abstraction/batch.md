@@ -22,6 +22,9 @@ A **BatchNode** extends `Node` but changes `prep()` and `exec()`:
 
 ### Example: Summarize a Large File
 
+{% tabs %}
+{% tab title="Python" %}
+
 ```python
 class MapSummaries(BatchNode):
     def prep(self, shared):
@@ -46,6 +49,44 @@ flow = Flow(start=map_summaries)
 flow.run(shared)
 ```
 
+{% endtab %}
+
+{% tab title="TypeScript" %}
+
+```typescript
+class MapSummaries extends BatchNode {
+  prep(shared: any): string[] {
+    // Suppose we have a big file; chunk it
+    const content = shared['data']
+    const chunkSize = 10000
+    const chunks: string[] = []
+    for (let i = 0; i < content.length; i += chunkSize) {
+      chunks.push(content.slice(i, i + chunkSize))
+    }
+    return chunks
+  }
+
+  exec(chunk: string): string {
+    const prompt = `Summarize this chunk in 10 words: ${chunk}`
+    const summary = callLLM(prompt)
+    return summary
+  }
+
+  post(shared: any, prepRes: string[], execResList: string[]): string {
+    const combined = execResList.join('\n')
+    shared['summary'] = combined
+    return 'default'
+  }
+}
+
+const mapSummaries = new MapSummaries()
+const flow = new Flow(mapSummaries)
+flow.run(shared)
+```
+
+{% endtab %}
+{% endtabs %}
+
 ---
 
 ## 2. BatchFlow
@@ -53,6 +94,9 @@ flow.run(shared)
 A **BatchFlow** runs a **Flow** multiple times, each time with different `params`. Think of it as a loop that replays the Flow for each parameter set.
 
 ### Example: Summarize Many Files
+
+{% tabs %}
+{% tab title="Python" %}
 
 ```python
 class SummarizeAllFiles(BatchFlow):
@@ -68,6 +112,30 @@ summarize_file = SummarizeFile(start=load_file)
 summarize_all_files = SummarizeAllFiles(start=summarize_file)
 summarize_all_files.run(shared)
 ```
+
+{% endtab %}
+
+{% tab title="TypeScript" %}
+
+```typescript
+class SummarizeAllFiles extends BatchFlow {
+  prep(shared: any): Array<Record<string, string>> {
+    // Return a list of param dicts (one per file)
+    const filenames = Object.keys(shared['data']) // e.g., ["file1.txt", "file2.txt", ...]
+    return filenames.map((fn) => ({ filename: fn }))
+  }
+}
+
+// Suppose we have a per-file Flow (e.g., load_file >> summarize >> reduce):
+const summarizeFile = new SummarizeFile(loadFile)
+
+// Wrap that flow into a BatchFlow:
+const summarizeAllFiles = new SummarizeAllFiles(summarizeFile)
+summarizeAllFiles.run(shared)
+```
+
+{% endtab %}
+{% endtabs %}
 
 ### Under the Hood
 
@@ -88,8 +156,10 @@ You can nest a **BatchFlow** in another **BatchFlow**. For instance:
 
 At each level, **BatchFlow** merges its own param dict with the parent’s. By the time you reach the **innermost** node, the final `params` is the merged result of **all** parents in the chain. This way, a nested structure can keep track of the entire context (e.g., directory + file name) at once.
 
-```python
+{% tabs %}
+{% tab title="Python" %}
 
+```python
 class FileBatchFlow(BatchFlow):
     def prep(self, shared):
         directory = self.params["directory"]
@@ -106,3 +176,33 @@ class DirectoryBatchFlow(BatchFlow):
 inner_flow = FileBatchFlow(start=MapSummaries())
 outer_flow = DirectoryBatchFlow(start=inner_flow)
 ```
+
+{% endtab %}
+
+{% tab title="TypeScript" %}
+
+```typescript
+class FileBatchFlow extends BatchFlow {
+  prep(shared: any): Array<Record<string, string>> {
+    const directory = this.params['directory']
+    // In real code you would use fs.readdirSync() or similar
+    // For example purposes we'll mock some files
+    const files = ['file1.txt', 'file2.txt'].filter((f) => f.endsWith('.txt'))
+    return files.map((f) => ({ filename: f }))
+  }
+}
+
+class DirectoryBatchFlow extends BatchFlow {
+  prep(shared: any): Array<Record<string, string>> {
+    const directories = ['/path/to/dirA', '/path/to/dirB']
+    return directories.map((d) => ({ directory: d }))
+  }
+}
+
+// MapSummaries have params like {"directory": "/path/to/dirA", "filename": "file1.txt"}
+const innerFlow = new FileBatchFlow(new MapSummaries())
+const outerFlow = new DirectoryBatchFlow(innerFlow)
+```
+
+{% endtab %}
+{% endtabs %}
