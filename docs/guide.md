@@ -56,7 +56,7 @@ Agentic Coding should be a collaboration between Human System Design and Agent I
          process --> endNode[End]
      ```
 
-   - {% hint style="success" %}
+     {% hint style="success" %}
      **If Humans can't specify the flow, AI Agents can't automate it!** Before building an LLM system, thoroughly understand the problem and potential solution by manually solving example inputs to develop intuition.  
      {% endhint %}
 
@@ -95,7 +95,7 @@ Agentic Coding should be a collaboration between Human System Design and Agent I
          print(call_llm(prompt))
      ```
 
-   - {% hint style="success" %}
+     {% hint style="success" %}
      **Sometimes, design Utilies before Flow:** For example, for an LLM project to automate a legacy system, the bottleneck will likely be the available interface to that system. Start by designing the hardest utilities for interfacing, and then build the flow around them.
      {% endhint %}
 
@@ -140,7 +140,7 @@ Agentic Coding should be a collaboration between Human System Design and Agent I
      - **Prompt Engineering**: Use clear, specific instructions with examples to reduce ambiguity.
      - **In-Context Learning**: Provide robust examples for tasks that are difficult to specify with instructions alone.
 
-   - {% hint style="success" %}
+     {% hint style="success" %}
      **You'll likely iterate a lot!** Expect to repeat Steps 3–6 hundreds of times.
 
      <div align="center"><img src="https://github.com/the-pocket/.github/raw/main/assets/success.png?raw=true" width="400"/></div>

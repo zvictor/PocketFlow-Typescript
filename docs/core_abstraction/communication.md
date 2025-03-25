@@ -14,7 +14,7 @@ Nodes and Flows **communicate** in 2 ways:
    - A global data structure (often an in-mem dict) that all nodes can read ( `prep()`) and write (`post()`).
    - Great for data results, large content, or anything multiple nodes need.
    - You shall design the data structure and populate it ahead.
-   - {% hint style="success" %}
+     {% hint style="success" %}
      **Separation of Concerns:** Use `Shared Store` for almost all cases to separate _Data Schema_ from _Compute Logic_! This approach is both flexible and easy to manage, resulting in more maintainable code. `Params` is more a syntax sugar for [Batch](./batch.md).
      {% endhint %}
 
