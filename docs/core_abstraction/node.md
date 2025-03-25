@@ -40,7 +40,7 @@ All steps are _optional_. E.g., you can only implement `prep` and `post` if you 
 
 ### Fault Tolerance & Retries
 
-You can **retry** `exec()` if it raises an exception via two parameters when define the Node:
+You can **retry** `exec()` if it raises an exception via two parameters when defining the Node:
 
 - `max_retries` (int): Max times to run `exec()`. The default is `1` (**no** retry).
 - `wait` (int): The time to wait (in **seconds**) before next retry. By default, `wait=0` (no waiting).
@@ -53,12 +53,23 @@ You can **retry** `exec()` if it raises an exception via two parameters when def
 my_node = SummarizeFile(max_retries=3, wait=10)
 ```
 
+{% endtab %}
+
+{% tab title="TypeScript" %}
+
+```typescript
+const myNode = new SummarizeFile({ maxRetries: 3, wait: 10 })
+```
+
 When an exception occurs in `exec()`, the Node automatically retries until:
 
 - It either succeeds, or
 - The Node has retried `max_retries - 1` times already and fails on the last attempt.
 
-You can get the current retry times (0-based) from `self.cur_retry`.
+You can get the current retry times (0-based) from `cur_retry`.
+
+{% tabs %}
+{% tab title="Python" %}
 
 ```python
 class RetryNode(Node):
@@ -67,18 +78,53 @@ class RetryNode(Node):
         raise Exception("Failed")
 ```
 
+{% endtab %}
+
+{% tab title="TypeScript" %}
+
+```typescript
+class RetryNode extends Node {
+  exec(prepRes: any): any {
+    console.log(`Retry ${this.curRetry} times`)
+    throw new Error('Failed')
+  }
+}
+```
+
+{% endtab %}
+{% endtabs %}
+
 ### Graceful Fallback
 
 To **gracefully handle** the exception (after all retries) rather than raising it, override:
+
+{% tabs %}
+{% tab title="Python" %}
 
 ```python
 def exec_fallback(self, prep_res, exc):
     raise exc
 ```
 
+{% endtab %}
+
+{% tab title="TypeScript" %}
+
+```typescript
+execFallback(prepRes: any, exc: Error): any {
+  throw exc;
+}
+```
+
+{% endtab %}
+{% endtabs %}
+
 By default, it just re-raises exception. But you can return a fallback result instead, which becomes the `exec_res` passed to `post()`.
 
 ### Example: Summarize file
+
+{% tabs %}
+{% tab title="Python" %}
 
 ```python
 class SummarizeFile(Node):
@@ -113,38 +159,6 @@ print("Summary stored:", shared["summary"])
 {% endtab %}
 
 {% tab title="TypeScript" %}
-
-```typescript
-const myNode = new SummarizeFile({ maxRetries: 3, wait: 10 })
-```
-
-When an exception occurs in `exec()`, the Node automatically retries until:
-
-- It either succeeds, or
-- The Node has retried `maxRetries - 1` times already and fails on the last attempt.
-
-You can get the current retry times (0-based) from `this.curRetry`.
-
-```typescript
-class RetryNode extends Node {
-  exec(prepRes: any): any {
-    console.log(`Retry ${this.curRetry} times`)
-    throw new Error('Failed')
-  }
-}
-```
-
-### Graceful Fallback
-
-To **gracefully handle** the exception (after all retries) rather than raising it, override:
-
-```typescript
-execFallback(prepRes: any, exc: Error): any {
-  throw exc;
-}
-```
-
-### Example: Summarize file
 
 ```typescript
 class SummarizeFile extends Node {
