@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { BaseNode } from '../base-node'
+import { BaseNode } from '../'
 
 // Create a concrete implementation of BaseNode for testing
 class TestNode extends BaseNode {

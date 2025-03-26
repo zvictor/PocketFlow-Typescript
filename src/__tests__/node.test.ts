@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { BatchNode, Node, ParallelBatchNode } from '../node'
+import { BatchNode, Node, ParallelBatchNode } from '../'
 
 // Test implementation of Node
 class TestNode extends Node {

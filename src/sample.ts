@@ -1,5 +1,4 @@
-import { Flow } from './flow'
-import { Node } from './node'
+import { Flow, Node } from '.'
 
 class ReadTarget extends Node {
   async _prep(shared: any): Promise<any> {

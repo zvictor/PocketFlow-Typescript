@@ -1,7 +1,6 @@
 import assert from 'node:assert'
 import { describe, test } from 'node:test'
-import { Flow } from '../flow'
-import { Node } from '../node'
+import { Flow, Node } from '../'
 
 // Test implementation of Node for Flow testing
 class TestNode extends Node {
