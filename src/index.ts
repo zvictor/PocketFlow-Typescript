@@ -23,7 +23,7 @@ export abstract class BaseNode {
     return node
   }
 
-  // return this for additional nextIf chaining
+  // return this for additional on() chaining
   on = (action: string, node: BaseNode): BaseNode => {
     if (action in this.successors) {
       console.warn(`Overwriting successor for action '${action}'`)
