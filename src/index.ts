@@ -114,7 +114,7 @@ export abstract class BatchNode extends Node {
   async exec(prepRes: any[]): Promise<any[]> {
     const results = []
     for (const item of prepRes) {
-      results.push(await this._exec(item))
+      results.push(await super.exec(item))
     }
     return results
   }
