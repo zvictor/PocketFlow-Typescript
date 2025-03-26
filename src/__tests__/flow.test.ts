@@ -3,7 +3,7 @@ import { describe, test } from 'node:test'
 import { Flow, Node } from '../'
 
 // Test implementation of Node for Flow testing
-class TestNode extends Node {
+class TestNode extends Node<any> {
   constructor(private readonly returnValue: any = null) {
     super()
   }
@@ -65,7 +65,7 @@ describe('Flow', async () => {
     const flow = new Flow()
     const captured: any = {}
 
-    class ParamTestNode extends Node {
+    class ParamTestNode extends Node<any> {
       async _prep(shared: any): Promise<any> {
         captured.params = this.params
         return shared

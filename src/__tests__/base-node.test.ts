@@ -3,7 +3,7 @@ import { describe, test } from 'node:test'
 import { BaseNode } from '../'
 
 // Create a concrete implementation of BaseNode for testing
-class TestNode extends BaseNode {
+class TestNode extends BaseNode<any> {
   async run(shared: any, params?: any, lastFlowResult?: any): Promise<any> {
     return 'test-result'
   }

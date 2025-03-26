@@ -1,7 +1,7 @@
 import { Flow, Node } from '.'
 
-class ReadTarget extends Node {
-  async _prep(shared: any): Promise<any> {
+class ReadTarget extends Node<string> {
+  async _prep(shared: string): Promise<any> {
     return shared
   }
 
@@ -9,7 +9,7 @@ class ReadTarget extends Node {
     return prepRes
   }
 
-  async _post(shared: any, prepRes: any, execRes: any): Promise<any> {
+  async _post(shared: string, prepRes: any, execRes: any): Promise<any> {
     return execRes
   }
 }

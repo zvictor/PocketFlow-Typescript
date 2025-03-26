@@ -3,7 +3,7 @@ import { describe, test } from 'node:test'
 import { BatchNode, Node, ParallelBatchNode } from '../'
 
 // Test implementation of Node
-class TestNode extends Node {
+class TestNode extends Node<any> {
   async _prep(shared: any): Promise<any> {
     return shared
   }
@@ -21,7 +21,7 @@ class TestNode extends Node {
 }
 
 // Test implementation of BatchNode
-class TestBatchNode extends BatchNode {
+class TestBatchNode extends BatchNode<any> {
   async _prep(shared: any): Promise<any[]> {
     return shared.items
   }
@@ -36,7 +36,7 @@ class TestBatchNode extends BatchNode {
 }
 
 // Test implementation of ParallelBatchNode
-class TestParallelBatchNode extends ParallelBatchNode {
+class TestParallelBatchNode extends ParallelBatchNode<any> {
   async _prep(shared: any): Promise<any[]> {
     return shared.items
   }
