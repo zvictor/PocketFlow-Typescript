@@ -1,6 +1,6 @@
-export abstract class BaseNode {
+export abstract class BaseNode<T> {
   params: Record<string, any> = {}
-  successors: Record<string, BaseNode> = {}
+  successors: Record<string, BaseNode<T>> = {}
 
   constructor() {}
 
@@ -8,7 +8,7 @@ export abstract class BaseNode {
     this.params = params
   }
 
-  getNextNode = (action?: string): BaseNode | null => {
+  getNextNode = (action?: string): BaseNode<T> | null => {
     const next = this.successors[action || 'default']
 
     if (!next && Object.keys(this.successors).length > 0) {
@@ -18,13 +18,13 @@ export abstract class BaseNode {
   }
 
   // return next node for chaining
-  next = (node: BaseNode): BaseNode => {
+  next = (node: BaseNode<T>): BaseNode<T> => {
     this.on('default', node)
     return node
   }
 
   // return this for additional on() chaining
-  on = (action: string, node: BaseNode): BaseNode => {
+  on = (action: string, node: BaseNode<T>): BaseNode<T> => {
     if (action in this.successors) {
       console.warn(`Overwriting successor for action '${action}'`)
     }
@@ -40,16 +40,16 @@ export abstract class BaseNode {
     return clone
   }
 
-  abstract run(shared: any, params?: Record<string, any>, lastFlowResult?: any): Promise<any>
+  abstract run(shared: T, params?: Record<string, any>, lastFlowResult?: any): Promise<any>
 }
 
-export class Flow extends BaseNode {
+export class Flow<T> extends BaseNode<T> {
   constructor() {
     super()
   }
 
-  async run(shared: any, params?: Record<string, any>, lastFlowResult?: any): Promise<any> {
-    let curr = this.getNextNode() as Flow | Node | null
+  async run(shared: T, params?: Record<string, any>, lastFlowResult?: any): Promise<any> {
+    let curr = this.getNextNode() as Flow<T> | Node<T> | null
 
     if (!curr) {
       throw new Error('Flow ends: no next node found')
@@ -69,7 +69,7 @@ export class Flow extends BaseNode {
   }
 }
 
-export abstract class Node extends BaseNode {
+export abstract class Node<T> extends BaseNode<T> {
   curRetry = 0
 
   constructor(
@@ -99,18 +99,18 @@ export abstract class Node extends BaseNode {
     return null
   }
 
-  async run(shared: any, params?: Record<string, any>, lastFlowResult?: any): Promise<any> {
+  async run(shared: T, params?: Record<string, any>, lastFlowResult?: any): Promise<any> {
     const p = await this._prep(shared)
     const e = await this.exec(p)
     return this._post(shared, p, e)
   }
 
-  abstract _prep(shared: any): Promise<any>
+  abstract _prep(shared: T): Promise<any>
   abstract _exec(prepRes: any): Promise<any>
-  abstract _post(shared: any, prepRes: any, execRes: any): Promise<any>
+  abstract _post(shared: T, prepRes: any, execRes: any): Promise<any>
 }
 
-export abstract class BatchNode extends Node {
+export abstract class BatchNode<T> extends Node<T> {
   async exec(prepRes: any[]): Promise<any[]> {
     const results = []
     for (const item of prepRes) {
@@ -120,7 +120,7 @@ export abstract class BatchNode extends Node {
   }
 }
 
-export abstract class ParallelBatchNode extends Node {
+export abstract class ParallelBatchNode<T> extends Node<T> {
   async exec(prepRes: any[]): Promise<any[]> {
     return Promise.all(prepRes.map((p) => super.exec(p)))
   }
