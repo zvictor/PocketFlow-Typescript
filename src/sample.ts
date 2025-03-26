@@ -46,12 +46,12 @@ function createMainFlow() {
 
   mainFlow
     .next(mainAgent)
-    .nextIf('read_file', readFileAction)
-    .nextIf('grep_search', grepSearchAction)
-    .nextIf('list_dir', listDirAction)
-    .nextIf('delete_file', deleteFileAction)
-    .nextIf('finish', formatResponseNode)
-    .nextIf('edit_file', editAgent)
+    .on('read_file', readFileAction)
+    .on('grep_search', grepSearchAction)
+    .on('list_dir', listDirAction)
+    .on('delete_file', deleteFileAction)
+    .on('finish', formatResponseNode)
+    .on('edit_file', editAgent)
 
   readFileAction.next(mainAgent)
   grepSearchAction.next(mainAgent)

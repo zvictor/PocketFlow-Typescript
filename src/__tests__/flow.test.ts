@@ -43,8 +43,8 @@ describe('Flow', async () => {
     const node3 = new TestNode('result-a')
 
     flow.next(node1)
-    node1.nextIf('branch-a', node3)
-    node1.nextIf('branch-b', node2)
+    node1.on('branch-a', node3)
+    node1.on('branch-b', node2)
 
     const result = await flow.run({})
     assert.strictEqual(result, 'result-a')

@@ -26,11 +26,11 @@ describe('BaseNode', () => {
     assert.strictEqual(node1.successors['default'], node2)
   })
 
-  test('nextIf should set conditional successor', async () => {
+  test('on() should set conditional successor', async () => {
     const node1 = new TestNode()
     const node2 = new TestNode()
 
-    node1.nextIf('condition', node2)
+    node1.on('condition', node2)
     assert.strictEqual(node1.successors['condition'], node2)
   })
 
@@ -40,7 +40,7 @@ describe('BaseNode', () => {
     const node3 = new TestNode()
 
     node1.next(node2)
-    node1.nextIf('special', node3)
+    node1.on('special', node3)
 
     assert.strictEqual(node1.getNextNode(), node2)
     assert.strictEqual(node1.getNextNode('special'), node3)
