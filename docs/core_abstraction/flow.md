@@ -33,10 +33,10 @@ Note that `node_a >> node_b` is equivalent to `node_a - "default" >> node_b`
 1. **Basic default transition**: `node_a.next(node_b)`
    This means if `node_a.post()` returns `"default"`, go to `node_b`.
 
-2. **Named action transition**: `node_a.next(node_b, 'action_name')` or `node_a.on('action_name').next(node_b)`
+2. **Named action transition**: `node_a.on('action_name', node_b)` or `node_a.next(node_b, 'action_name')`
    This means if `node_a.post()` returns `"action_name"`, go to `node_b`.
 
-Note that `node_a.next(node_b)` is equivalent to both `node_a.next(node_b, 'default')` and `node_a.on('default').next(node_b)`
+Note that `node_a.next(node_b)` is equivalent to both `node_a.next(node_b, 'default')` and `node_a.on('default', node_b)`
 
 {% endtab %}
 {% endtabs %}
@@ -109,9 +109,9 @@ flow = Flow(start=review)
 
 ```typescript
 // Define the flow connections
-review.on('approved').next(payment) // If approved, process payment
-review.on('needs_revision').next(revise) // If needs changes, go to revision
-review.on('rejected').next(finish) // If rejected, finish the process
+review.on('approved', payment) // If approved, process payment
+review.on('needs_revision', revise) // If needs changes, go to revision
+review.on('rejected', finish) // If rejected, finish the process
 
 revise.next(review) // After revision, go back for another review
 payment.next(finish) // After payment, finish the process

@@ -22,12 +22,8 @@ export class BaseNode {
     return node
   }
 
-  on(action: string): ConditionalTransition {
-    if (typeof action !== 'string') {
-      throw new TypeError('Action must be a string')
-    }
-
-    return new ConditionalTransition(this, action)
+  on(action: string, node: BaseNode): BaseNode {
+    return this.next(node, action)
   }
 
   prep(shared: any): any {}
@@ -49,17 +45,6 @@ export class BaseNode {
       console.warn("Node won't run successors. Use Flow.")
     }
     return this._run(shared)
-  }
-}
-
-class ConditionalTransition {
-  constructor(
-    private src: BaseNode,
-    private action: string,
-  ) {}
-
-  next(tgt: BaseNode): BaseNode {
-    return this.src.next(tgt, this.action)
   }
 }
 
