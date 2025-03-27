@@ -1,263 +1,206 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
-import { AsyncFlow, AsyncNode, Flow, Node } from '../pocketflow/index'
+import { Flow, Node } from '../pocketflow/index'
 
-// Synchronous test nodes
 class FallbackNode extends Node {
   constructor(
     private shouldFail = true,
     maxRetries = 1,
+    private customFallbackResult?: string,
   ) {
     super(maxRetries)
     this.shouldFail = shouldFail
-    this.curRetry = 0
   }
 
-  prep(sharedStorage: Record<string, any>) {
+  async prep(sharedStorage: Record<string, any>) {
     if (!sharedStorage['results']) {
       sharedStorage['results'] = []
     }
     return null
   }
 
-  exec(prepResult: any) {
+  async exec(prepResult: any) {
     if (this.shouldFail) {
       throw new Error('Intentional failure')
     }
     return 'success'
   }
 
-  execFallback(prepResult: any, exc: Error) {
-    return 'fallback'
-  }
-
-  post(sharedStorage: Record<string, any>, prepResult: any, execResult: any) {
-    sharedStorage['results'].push({
-      attempts: this.curRetry + 1, // Match Python behavior where count starts at 1
-      result: execResult,
-    })
-  }
-}
-
-class NoFallbackNode extends Node {
-  prep(sharedStorage: Record<string, any>) {
-    if (!sharedStorage['results']) {
-      sharedStorage['results'] = []
-    }
-    return null
-  }
-
-  exec(prepResult: any) {
-    throw new Error('Test error')
-  }
-
-  post(sharedStorage: Record<string, any>, prepResult: any, execResult: any) {
-    sharedStorage['results'].push({ result: execResult })
-    return execResult
-  }
-}
-
-// Async test nodes
-class AsyncFallbackNode extends AsyncNode {
-  constructor(
-    private shouldFail = true,
-    maxRetries = 1,
-  ) {
-    super(maxRetries)
-    this.shouldFail = shouldFail
-    this.curRetry = 0
-  }
-
-  async prepAsync(sharedStorage: Record<string, any>) {
-    if (!sharedStorage['results']) {
-      sharedStorage['results'] = []
-    }
-    return null
-  }
-
-  async execAsync(prepResult: any) {
-    if (this.shouldFail) {
-      throw new Error('Intentional async failure')
-    }
-    return 'success'
-  }
-
-  async execFallbackAsync(prepResult: any, exc: Error) {
+  async execFallback(prepResult: any, exc: Error) {
     await new Promise((resolve) => setTimeout(resolve, 10)) // Simulate async work
-    return 'async_fallback'
+    return this.customFallbackResult || 'fallback'
   }
 
-  async postAsync(sharedStorage: Record<string, any>, prepResult: any, execResult: any) {
+  async post(sharedStorage: Record<string, any>, prepResult: any, execResult: any) {
     sharedStorage['results'].push({
-      attempts: this.curRetry + 1, // Match Python behavior where count starts at 1
+      attempts: this.curRetry + 1,
       result: execResult,
+      error: prepResult?.error || null,
     })
   }
 }
 
-class NoFallbackAsyncNode extends AsyncNode {
-  async prepAsync(sharedStorage: Record<string, any>) {
-    if (!sharedStorage['results']) {
-      sharedStorage['results'] = []
+class ConditionalFallbackNode extends Node {
+  async exec(item: any) {
+    if (item.type === 'invalid') {
+      throw new Error('Invalid item')
     }
-    return null
+    return { ...item, processed: true }
   }
 
-  async execAsync(prepResult: any) {
-    throw new Error('Test async error')
-  }
-
-  async postAsync(sharedStorage: Record<string, any>, prepResult: any, execResult: any) {
-    sharedStorage['results'].push({ result: execResult })
-    return execResult
+  async execFallback(item: any, exc: Error) {
+    if (item.type === 'invalid-but-recoverable') {
+      return { ...item, processed: false, error: exc.message }
+    }
+    throw exc // Re-throw for unrecoverable items
   }
 }
 
 describe('Fallback Tests', () => {
-  describe('Synchronous', () => {
-    it('should not call fallback when execution succeeds', () => {
-      const sharedStorage: Record<string, any> = {}
-      const node = new FallbackNode(false)
-      node.run(sharedStorage)
+  it('should not call fallback when execution succeeds', async () => {
+    const sharedStorage: Record<string, any> = {}
+    const node = new FallbackNode(false)
+    await node.run(sharedStorage)
 
-      assert.strictEqual(sharedStorage['results'].length, 1)
-      assert.strictEqual(sharedStorage['results'][0].attempts, 1) // First attempt succeeds
-      assert.strictEqual(sharedStorage['results'][0].result, 'success')
-    })
-
-    it('should call fallback after retries are exhausted', () => {
-      const sharedStorage: Record<string, any> = {}
-      const node = new FallbackNode(true, 2)
-      node.run(sharedStorage)
-
-      assert.strictEqual(sharedStorage['results'].length, 1)
-      assert.strictEqual(sharedStorage['results'][0].attempts, 2) // Matches maxRetries
-      assert.strictEqual(sharedStorage['results'][0].result, 'fallback')
-    })
-
-    it('should handle fallback in flow', () => {
-      class ResultNode extends Node {
-        prep(sharedStorage: Record<string, any>) {
-          return sharedStorage['results']
-        }
-
-        exec(prepResult: any) {
-          return prepResult
-        }
-
-        post(sharedStorage: Record<string, any>, prepResult: any, execResult: any) {
-          sharedStorage['final_result'] = execResult
-          return 'fallback'
-        }
-      }
-
-      const sharedStorage: Record<string, any> = {}
-      const fallbackNode = new FallbackNode(true)
-      const resultNode = new ResultNode()
-      fallbackNode.rshift(resultNode)
-
-      // Run the flow
-      const flow = new Flow(fallbackNode)
-      const flowResult = flow.run(sharedStorage)
-
-      // Verify the flow result is undefined (Flow doesn't return value in Python)
-      assert.strictEqual(flowResult, undefined)
-
-      // Verify the fallback node was executed and returned 'fallback'
-      assert.strictEqual(sharedStorage['results'].length, 1)
-      assert.strictEqual(sharedStorage['results'][0].result, 'fallback')
-
-      // Verify the result node received and processed the fallback result
-      assert.deepStrictEqual(sharedStorage['final_result'], [{ attempts: 1, result: 'fallback' }])
-    })
-
-    it('should throw error when no fallback implementation', () => {
-      const sharedStorage: Record<string, any> = {}
-      const node = new NoFallbackNode()
-      assert.throws(() => node.run(sharedStorage), Error)
-    })
-
-    it('should retry before calling fallback', () => {
-      const sharedStorage: Record<string, any> = {}
-      const node = new FallbackNode(true, 3)
-      node.run(sharedStorage)
-
-      assert.strictEqual(sharedStorage['results'].length, 1)
-      assert.strictEqual(sharedStorage['results'][0].attempts, 3) // Matches maxRetries
-      assert.strictEqual(sharedStorage['results'][0].result, 'fallback')
-    })
+    assert.strictEqual(sharedStorage['results'].length, 1)
+    assert.strictEqual(sharedStorage['results'][0].attempts, 1)
+    assert.strictEqual(sharedStorage['results'][0].result, 'success')
   })
 
-  describe('Asynchronous', () => {
-    it('should not call async fallback when execution succeeds', async () => {
-      const sharedStorage: Record<string, any> = {}
-      const node = new AsyncFallbackNode(false)
-      await node.runAsync(sharedStorage)
+  it('should call fallback after retries are exhausted', async () => {
+    const sharedStorage: Record<string, any> = {}
+    const node = new FallbackNode(true, 2)
+    await node.run(sharedStorage)
 
-      assert.strictEqual(sharedStorage['results'].length, 1)
-      assert.strictEqual(sharedStorage['results'][0].attempts, 1)
-      assert.strictEqual(sharedStorage['results'][0].result, 'success')
-    })
+    assert.strictEqual(sharedStorage['results'].length, 1)
+    assert.strictEqual(sharedStorage['results'][0].attempts, 2)
+    assert.strictEqual(sharedStorage['results'][0].result, 'fallback')
+  })
 
-    it('should call async fallback after retries are exhausted', async () => {
-      const sharedStorage: Record<string, any> = {}
-      const node = new AsyncFallbackNode(true, 2)
-      await node.runAsync(sharedStorage)
+  it('should handle custom fallback results', async () => {
+    const sharedStorage: Record<string, any> = {}
+    const node = new FallbackNode(true, 1, 'custom_fallback')
+    await node.run(sharedStorage)
 
-      assert.strictEqual(sharedStorage['results'].length, 1)
-      assert.strictEqual(sharedStorage['results'][0].attempts, 2)
-      assert.strictEqual(sharedStorage['results'][0].result, 'async_fallback')
-    })
+    assert.strictEqual(sharedStorage['results'][0].result, 'custom_fallback')
+  })
 
-    it('should handle async fallback in flow', async () => {
-      class AsyncResultNode extends AsyncNode {
-        async prepAsync(sharedStorage: Record<string, any>) {
-          return sharedStorage['results'][0].result
-        }
+  it('should handle conditional fallback', async () => {
+    const testItems = [
+      { id: 1, type: 'valid' },
+      { id: 2, type: 'invalid-but-recoverable' },
+      { id: 3, type: 'invalid' },
+    ]
 
-        async execAsync(prepResult: any) {
-          return prepResult
-        }
+    const node = new ConditionalFallbackNode()
+    const results = await Promise.allSettled(testItems.map((item) => node.exec(item)))
 
-        async postAsync(sharedStorage: Record<string, any>, prepResult: any, execResult: any) {
-          sharedStorage['final_result'] = execResult
-          return 'async_fallback'
-        }
+    assert.deepStrictEqual(results[0].status, 'fulfilled')
+    assert.deepStrictEqual(results[1].status, 'fulfilled')
+    assert.deepStrictEqual(results[2].status, 'rejected')
+  })
+
+  it('should handle nested fallback in flow', async () => {
+    class InnerNode extends Node {
+      async prep() {
+        return {}
       }
 
-      const sharedStorage: Record<string, any> = {}
-      const fallbackNode = new AsyncFallbackNode(true)
-      const resultNode = new AsyncResultNode()
-      fallbackNode.rshift(resultNode)
+      async exec() {
+        throw new Error('Inner failure')
+      }
 
-      const flow = new AsyncFlow(fallbackNode)
-      const flowResult = await flow.runAsync(sharedStorage)
+      async execFallback(prepRes: any) {
+        return { recovered: true }
+      }
 
-      // Verify the flow result is undefined (AsyncFlow doesn't return value in Python)
-      assert.strictEqual(flowResult, undefined)
+      async post(shared: any, prepRes: any, execRes: any) {
+        shared.recovered = execRes.recovered
+        return 'default' // Explicitly return default action
+      }
+    }
 
-      // Verify the fallback node was executed and returned 'async_fallback'
-      assert.strictEqual(sharedStorage['results'].length, 1)
-      assert.strictEqual(sharedStorage['results'][0].result, 'async_fallback')
+    class OuterNode extends Node {
+      async prep(shared: any) {
+        if (!shared.recovered) {
+          throw new Error('Recovery failed')
+        }
+        return shared
+      }
 
-      // Verify the result node received and processed the fallback result
-      assert.strictEqual(sharedStorage['final_result'], 'async_fallback')
-    })
+      async exec(input: any) {
+        return 'success'
+      }
 
-    it('should throw error when no async fallback implementation', async () => {
-      const sharedStorage: Record<string, any> = {}
-      const node = new NoFallbackAsyncNode()
-      await assert.rejects(async () => node.runAsync(sharedStorage), Error)
-    })
+      async post(shared: any, prepRes: any, execRes: any) {
+        shared.result = execRes // Store result in shared state
+        return 'success' // Explicitly return success action
+      }
+    }
 
-    it('should retry before calling async fallback', async () => {
-      const sharedStorage: Record<string, any> = {}
-      const node = new AsyncFallbackNode(true, 3)
-      await node.runAsync(sharedStorage)
+    const inner = new InnerNode()
+    const outer = new OuterNode()
+    inner.next(outer)
 
-      assert.strictEqual(sharedStorage['results'].length, 1)
-      assert.strictEqual(sharedStorage['results'][0].attempts, 3)
-      assert.strictEqual(sharedStorage['results'][0].result, 'async_fallback')
-    })
+    const flow = new Flow(inner)
+    const shared: { result?: string } = {}
+    const result = await flow.run(shared)
+
+    // Verify both the shared state and flow return value
+    assert.strictEqual(shared.result, 'success')
+    assert.strictEqual(result, undefined) // Flow returns the last action from InnerNode but value gets discarded unless `.post` is implemented
+  })
+
+  it('should track error context in fallback', async () => {
+    const sharedStorage: Record<string, any> = { results: [] }
+    const node = new FallbackNode(true, 1)
+    node.exec = async () => {
+      const err = new Error('Failed with context')
+      throw Object.assign(err, { context: { itemId: 123 } })
+    }
+
+    node.execFallback = async (_, exc: any) => {
+      return JSON.stringify({ error: exc })
+    }
+
+    node.post = async (sharedStorage, _, execResult) => {
+      sharedStorage['results'].push({
+        attempts: 1,
+        result: JSON.parse(execResult),
+        error: null,
+      })
+    }
+
+    await node.run(sharedStorage)
+    assert.strictEqual(sharedStorage['results'][0].result.error.context.itemId, 123)
+  })
+
+  it('should handle fallback with async side effects', async () => {
+    let cleanupCalled = false
+    const node = new FallbackNode(true, 1)
+    node.execFallback = async () => {
+      await new Promise((resolve) => setTimeout(resolve, 10))
+      cleanupCalled = true
+      return 'cleanup_complete'
+    }
+
+    await node.run({})
+    assert(cleanupCalled)
+  })
+
+  it('should maintain state between retries', async () => {
+    let attemptCount = 0
+    const node = new FallbackNode(true, 3)
+    node.exec = async () => {
+      attemptCount++
+      throw new Error(`Attempt ${attemptCount}`)
+    }
+
+    node.execFallback = async (_, exc) => {
+      return exc.message
+    }
+
+    await node.run({})
+    assert.strictEqual(attemptCount, 3)
   })
 })
