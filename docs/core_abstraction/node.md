@@ -7,19 +7,19 @@ nav_order: 1
 
 # Node
 
-A **Node** is the smallest building block. Each Node has 3 steps `prep->exec->post`:
+A **Node** is the smallest building block. Each Node has 3 steps `prep -> exec -> post`:
 
 <div align="center">
   <img src="https://github.com/the-pocket/.github/raw/main/assets/node.png?raw=true" width="400"/>
 </div>
 
-1. `prep(shared)`
+1. `async prep(shared)`
 
    - **Read and preprocess data** from `shared` store.
    - Examples: _query DB, read files, or serialize data into a string_.
    - Return `prep_res`, which is used by `exec()` and `post()`.
 
-2. `exec(prep_res)`
+2. `async exec(prep_res)`
 
    - **Execute compute logic**, with optional retries and error handling (below).
    - Examples: _(mostly) LLM calls, remote APIs, tool use_.
@@ -27,7 +27,7 @@ A **Node** is the smallest building block. Each Node has 3 steps `prep->exec->po
    - ⚠️ If retries enabled, ensure idempotent implementation.
    - Return `exec_res`, which is passed to `post()`.
 
-3. `post(shared, prep_res, exec_res)`
+3. `async post(shared, prep_res, exec_res)`
    - **Postprocess and write data** back to `shared`.
    - Examples: _update DB, change states, log results_.
    - **Decide the next action** by returning a _string_ (`action = "default"` if _None_).
@@ -73,7 +73,7 @@ You can get the current retry times (0-based) from `cur_retry`.
 
 ```python
 class RetryNode(Node):
-    def exec(self, prep_res):
+    async def exec(self, prep_res):
         print(f"Retry {self.cur_retry} times")
         raise Exception("Failed")
 ```
@@ -84,7 +84,7 @@ class RetryNode(Node):
 
 ```typescript
 class RetryNode extends Node {
-  exec(prepRes: any): any {
+  async exec(prepRes: any): any {
     console.log(`Retry ${this.curRetry} times`)
     throw new Error('Failed')
   }
@@ -102,7 +102,7 @@ To **gracefully handle** the exception (after all retries) rather than raising i
 {% tab title="Python" %}
 
 ```python
-def exec_fallback(self, prep_res, exc):
+async def exec_fallback(self, prep_res, exc):
     raise exc
 ```
 
@@ -111,7 +111,7 @@ def exec_fallback(self, prep_res, exc):
 {% tab title="TypeScript" %}
 
 ```typescript
-execFallback(prepRes: any, exc: Error): any {
+async execFallback(prepRes: any, exc: Error): any {
   throw exc;
 }
 ```
@@ -121,39 +121,41 @@ execFallback(prepRes: any, exc: Error): any {
 
 By default, it just re-raises exception. But you can return a fallback result instead, which becomes the `exec_res` passed to `post()`.
 
-### Example: Summarize file
+### Example: Summarize File
 
 {% tabs %}
 {% tab title="Python" %}
 
 ```python
 class SummarizeFile(Node):
-    def prep(self, shared):
+    async def prep(self, shared):
         return shared["data"]
 
-    def exec(self, prep_res):
+    async def exec(self, prep_res):
         if not prep_res:
             return "Empty file content"
         prompt = f"Summarize this text in 10 words: {prep_res}"
         summary = call_llm(prompt)  # might fail
         return summary
 
-    def exec_fallback(self, prep_res, exc):
+    async def exec_fallback(self, prep_res, exc):
         # Provide a simple fallback instead of crashing
         return "There was an error processing your request."
 
-    def post(self, shared, prep_res, exec_res):
+    async def post(self, shared, prep_res, exec_res):
         shared["summary"] = exec_res
         # Return "default" by not returning
 
 summarize_node = SummarizeFile(max_retries=3)
 
-# node.run() calls prep->exec->post
-# If exec() fails, it retries up to 3 times before calling exec_fallback()
-action_result = summarize_node.run(shared)
+async def main():
+    # node.run() calls prep->exec->post
+    # If exec() fails, it retries up to 3 times before calling exec_fallback()
+    action_result = await summarize_node.run(shared)
+    print("Action returned:", action_result)  # "default"
+    print("Summary stored:", shared["summary"])
 
-print("Action returned:", action_result)  # "default"
-print("Summary stored:", shared["summary"])
+asyncio.run(main())
 ```
 
 {% endtab %}
@@ -162,25 +164,25 @@ print("Summary stored:", shared["summary"])
 
 ```typescript
 class SummarizeFile extends Node {
-  prep(shared: any): any {
+  async prep(shared: any): Promise<any> {
     return shared['data']
   }
 
-  exec(prepRes: any): any {
+  async exec(prepRes: any): Promise<string> {
     if (!prepRes) {
       return 'Empty file content'
     }
     const prompt = `Summarize this text in 10 words: ${prepRes}`
-    const summary = callLLM(prompt) // might fail
+    const summary = await callLLM(prompt) // might fail
     return summary
   }
 
-  execFallback(prepRes: any, exc: Error): any {
+  async execFallback(prepRes: any, exc: Error): Promise<string> {
     // Provide a simple fallback instead of crashing
     return 'There was an error processing your request.'
   }
 
-  post(shared: any, prepRes: any, execRes: any): void {
+  async post(shared: any, prepRes: any, execRes: any): Promise<string> {
     shared['summary'] = execRes
     // Return "default" by not returning
   }
@@ -190,7 +192,7 @@ const summarizeNode = new SummarizeFile({ maxRetries: 3 })
 
 // node.run() calls prep->exec->post
 // If exec() fails, it retries up to 3 times before calling execFallback()
-const actionResult = summarizeNode.run(shared)
+const actionResult = await summarizeNode.run(shared)
 
 console.log('Action returned:', actionResult) // "default"
 console.log('Summary stored:', shared['summary'])

@@ -10,8 +10,7 @@
 - [Flow](core_abstraction/flow.md)
 - [Communication](core_abstraction/communication.md)
 - [Batch](core_abstraction/batch.md)
-- [(Advanced) Async](core_abstraction/async.md)
-- [(Advanced) Parallel](core_abstraction/parallel.md)
+- [(Advanced) Throttling](core_abstraction/throttling.md)
 
 ## Design Patterns
 

@@ -151,11 +151,11 @@ export async function callLLM(prompt: string): Promise<string> {
            "results": {}                   # Empty dict to store outputs
        }
        ```
-   - For each [Node](./core_abstraction/node.md), describe its type, how it reads and writes data, and which utility function it uses. Keep it specific but high-level without codes. For example:
-     - `type`: Regular (or Batch, or Async)
+   - For each [Node](./core_abstraction/node.md), describe how it reads and writes data, and which utility function it uses. Keep it specific but high-level without codes. For example:
      - `prep`: Read "text" from the shared store
      - `exec`: Call the embedding utility function
      - `post`: Write "embedding" to the shared store
+     - For batch processing, specify if it's sequential or parallel
 
 5. **Implementation**: Implement the initial nodes and flows based on the design.
 
@@ -215,26 +215,26 @@ from pocketflow import Node
 from utils.call_llm import call_llm
 
 class GetQuestionNode(Node):
-    def exec(self, _):
+    async def exec(self, _):
         # Get question directly from user input
         user_question = input("Enter your question: ")
         return user_question
 
-    def post(self, shared, prep_res, exec_res):
+    async def post(self, shared, prep_res, exec_res):
         # Store the user's question
         shared["question"] = exec_res
         return "default"  # Go to the next node
 
 class AnswerNode(Node):
-    def prep(self, shared):
+    async def prep(self, shared):
         # Read question from shared
         return shared["question"]
 
-    def exec(self, question):
+    async def exec(self, question):
         # Call LLM to get the answer
         return call_llm(question)
 
-    def post(self, shared, prep_res, exec_res):
+    async def post(self, shared, prep_res, exec_res):
         # Store the answer in shared
         shared["answer"] = exec_res
 ```
@@ -249,13 +249,13 @@ import { Node } from 'pocketflow'
 import { callLLM } from './utils/callLLM'
 
 class GetQuestionNode extends Node {
-  exec(_: any): string {
+  async exec(_: any): Promise<string> {
     // Get question directly from user input
     const userQuestion = 'What is the meaning of life?'
     return userQuestion
   }
 
-  post(shared: any, _prepRes: any, execRes: string): string {
+  async post(shared: any, _prepRes: any, execRes: string): Promise<string> {
     // Store the user's question
     shared['question'] = execRes
     return 'default' // Go to the next node
@@ -263,17 +263,17 @@ class GetQuestionNode extends Node {
 }
 
 class AnswerNode extends Node {
-  prep(shared: any): string {
+  async prep(shared: any): Promise<string> {
     // Read question from shared
     return shared['question']
   }
 
-  exec(question: string): Promise<string> {
+  async exec(question: string): Promise<string> {
     // Call LLM to get the answer
-    return callLLM(question)
+    return await callLLM(question)
   }
 
-  post(shared: any, _prepRes: any, execRes: string): void {
+  async post(shared: any, _prepRes: any, execRes: string): Promise<void> {
     // Store the answer in shared
     shared['answer'] = execRes
   }
@@ -342,7 +342,7 @@ from flow import create_qa_flow
 
 # Example main function
 # Please replace this with your own main function
-def main():
+async def main():
     shared = {
         "question": None,  # Will be populated by GetQuestionNode from user input
         "answer": None     # Will be populated by AnswerNode
@@ -350,12 +350,12 @@ def main():
 
     # Create the flow and run it
     qa_flow = create_qa_flow()
-    qa_flow.run(shared)
+    await qa_flow.run(shared)
     print(f"Question: {shared['question']}")
     print(f"Answer: {shared['answer']}")
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
 ```
 
 {% endtab %}

@@ -12,41 +12,53 @@ nav_order: 4
 - **Chunk-based** processing (e.g., splitting large texts).
 - **Iterative** processing over lists of input items (e.g., user queries, files, URLs).
 
-## 1. BatchNode
+## 1. SequentialBatchNode
 
-A **BatchNode** extends `Node` but changes `prep()` and `exec()`:
+A **SequentialBatchNode** extends `Node` for sequential processing with changes to:
 
-- **`prep(shared)`**: returns an **iterable** (e.g., list, generator).
-- **`exec(item)`**: called **once** per item in that iterable.
-- **`post(shared, prep_res, exec_res_list)`**: after all items are processed, receives a **list** of results (`exec_res_list`) and returns an **Action**.
+- **`async prep(shared)`**: returns an **iterable** (e.g., list, generator).
+- **`async exec(item)`**: called **once** per item in that iterable.
+- **`async post(shared, prep_res, exec_res_list)`**: after all items are processed, receives a **list** of results (`exec_res_list`) and returns an **Action**.
 
-### Example: Summarize a Large File
+## 2. ParallelBatchNode
+
+{% hint style="warning" %}
+**Parallel Processing Considerations**:
+
+- Ensure operations are independent before parallelizing
+- Watch for race conditions in shared resources
+- Consider using [Throttling](./throttling.md) mechanisms for rate-limited APIs
+  {% endhint %}
+
+A **ParallelBatchNode** extends `Node` for parallel processing with changes to:
+
+- **`async prep(shared)`**: returns an **iterable** (e.g., list, generator).
+- **`async exec(item)`**: called **concurrently** for each item.
+- **`async post(shared, prep_res, exec_res_list)`**: receives all results when done.
+
+### Example: Sequential Summarize File
 
 {% tabs %}
 {% tab title="Python" %}
+{% hint style="info" %}
+**Python GIL Note**: Due to Python's GIL, parallel nodes can't truly parallelize CPU-bound tasks but excel at I/O-bound work like API calls.
+{% endhint %}
 
 ```python
-class MapSummaries(BatchNode):
-    def prep(self, shared):
-        # Suppose we have a big file; chunk it
+class SequentialSummaries(SequentialBatchNode):
+    async def prep(self, shared):
+    	# Suppose we have a big file; chunk it
         content = shared["data"]
         chunk_size = 10000
-        chunks = [content[i:i+chunk_size] for i in range(0, len(content), chunk_size)]
-        return chunks
+        return [content[i:i+chunk_size] for i in range(0, len(content), chunk_size)]
 
-    def exec(self, chunk):
+    async def exec(self, chunk):
         prompt = f"Summarize this chunk in 10 words: {chunk}"
-        summary = call_llm(prompt)
-        return summary
+        return await call_llm_async(prompt)
 
-    def post(self, shared, prep_res, exec_res_list):
-        combined = "\n".join(exec_res_list)
-        shared["summary"] = combined
+    async def post(self, shared, prep_res, exec_res_list):
+        shared["summary"] = "\n".join(exec_res_list)
         return "default"
-
-map_summaries = MapSummaries()
-flow = Flow(start=map_summaries)
-flow.run(shared)
 ```
 
 {% endtab %}
@@ -54,8 +66,8 @@ flow.run(shared)
 {% tab title="TypeScript" %}
 
 ```typescript
-class MapSummaries extends BatchNode {
-  prep(shared: any): string[] {
+class SequentialSummaries extends SequentialBatchNode {
+  async prep(shared: any): Promise<string[]> {
     // Suppose we have a big file; chunk it
     const content = shared['data']
     const chunkSize = 10000
@@ -66,22 +78,98 @@ class MapSummaries extends BatchNode {
     return chunks
   }
 
-  exec(chunk: string): string {
+  async exec(chunk: string): Promise<string> {
     const prompt = `Summarize this chunk in 10 words: ${chunk}`
-    const summary = callLLM(prompt)
-    return summary
+    return await callLLM(prompt)
   }
 
-  post(shared: any, prepRes: string[], execResList: string[]): string {
-    const combined = execResList.join('\n')
-    shared['summary'] = combined
+  async post(shared: any, prepRes: string[], execResList: string[]): Promise<string> {
+    shared['summary'] = execResList.join('\n')
+    return 'default'
+  }
+}
+```
+
+{% endtab %}
+{% endtabs %}
+
+### Example: Parallel Summarize of a Large File
+
+{% tabs %}
+{% tab title="Python" %}
+
+```python
+class ParallelSummaries(ParallelBatchNode):
+    async def prep(self, shared):
+        # Suppose we have a big file; chunk it
+        content = shared["data"]
+        chunk_size = 10000
+        chunks = [content[i:i+chunk_size] for i in range(0, len(content), chunk_size)]
+        return chunks
+
+    async def exec(self, chunk):
+        prompt = f"Summarize this chunk in 10 words: {chunk}"
+        summary = call_llm(prompt)
+        return summary
+
+    async def post(self, shared, prep_res, exec_res_list):
+        shared["summary"] = "\n".join(exec_res_list)
+        return "default"
+
+# (Optional) With concurrency control
+class LimitedParallelSummaries(ParallelSummaries):
+    def __init__(self, concurrency=3):
+        self.semaphore = asyncio.Semaphore(concurrency)
+
+    async def exec(self, chunk):
+        async with self.semaphore:
+            prompt = f"Summarize this chunk in 10 words: {chunk}"
+            return call_llm(prompt)
+```
+
+{% endtab %}
+
+{% tab title="TypeScript" %}
+
+```typescript
+class ParallelSummaries extends ParallelBatchNode {
+  async prep(shared: any): Promise<string[]> {
+    // Suppose we have a big file; chunk it
+    const content = shared['data']
+    const chunkSize = 10000
+    const chunks: string[] = []
+    for (let i = 0; i < content.length; i += chunkSize) {
+      chunks.push(content.slice(i, i + chunkSize))
+    }
+    return chunks
+  }
+
+  async exec(chunk: string): Promise<string> {
+    const prompt = `Summarize this chunk in 10 words: ${chunk}`
+    return await callLLM(prompt)
+  }
+
+  async post(shared: any, prepRes: string[], execResList: string[]): Promise<string> {
+    shared['summary'] = execResList.join('\n')
     return 'default'
   }
 }
 
-const mapSummaries = new MapSummaries()
-const flow = new Flow(mapSummaries)
-flow.run(shared)
+class LimitedParallelSummaries extends ParallelBatchNode {
+  private limit: ReturnType<typeof pLimit>
+
+  constructor(concurrency = 3) {
+    super()
+    this.limit = pLimit(concurrency)
+  }
+
+  async exec(chunk: string): Promise<string> {
+    return this.limit(() => {
+      const prompt = `Summarize this chunk in 10 words: ${chunk}`
+      return callLLM(prompt)
+    })
+  }
+}
 ```
 
 {% endtab %}
@@ -89,9 +177,27 @@ flow.run(shared)
 
 ---
 
-## 2. BatchFlow
+## 3. BatchFlow Types
 
-A **BatchFlow** runs a **Flow** multiple times, each time with different `params`. Think of it as a loop that replays the Flow for each parameter set.
+### SequentialBatchFlow
+
+A **SequentialBatchFlow** runs a **Flow** multiple times sequentially, each time with different `params`. Think of it as a loop that replays the Flow for each parameter set.
+
+{% hint style="info" %}
+**When to use**: Choose sequential processing when order matters or when working with APIs that have strict rate limits. See [Throttling](./throttling.md) for managing rate limits.
+{% endhint %}
+
+### ParallelBatchFlow
+
+A **ParallelBatchFlow** runs a **Flow** multiple times concurrently, each time with different `params`. This is useful for I/O-bound operations where you want to maximize throughput.
+
+{% hint style="warning" %}
+**Concurrency Considerations**:
+
+- Ensure operations are independent
+- Watch for race conditions in shared resources
+- Consider using [Throttling](./throttling.md) mechanisms for rate-limited APIs
+  {% endhint %}
 
 ### Example: Summarize Many Files
 
@@ -99,7 +205,7 @@ A **BatchFlow** runs a **Flow** multiple times, each time with different `params
 {% tab title="Python" %}
 
 ```python
-class SummarizeAllFiles(BatchFlow):
+class SummarizeAllFiles(SequentialBatchFlow): # or use ParallelBatchFlow
     def prep(self, shared):
         # Return a list of param dicts (one per file)
         filenames = list(shared["data"].keys())  # e.g., ["file1.txt", "file2.txt", ...]
@@ -108,7 +214,7 @@ class SummarizeAllFiles(BatchFlow):
 # Suppose we have a per-file Flow (e.g., load_file >> summarize >> reduce):
 summarize_file = SummarizeFile(start=load_file)
 
-# Wrap that flow into a BatchFlow:
+# Wrap that flow into a SequentialBatchFlow:
 summarize_all_files = SummarizeAllFiles(start=summarize_file)
 summarize_all_files.run(shared)
 ```
@@ -118,7 +224,7 @@ summarize_all_files.run(shared)
 {% tab title="TypeScript" %}
 
 ```typescript
-class SummarizeAllFiles extends BatchFlow {
+class SummarizeAllFiles extends SequentialBatchFlow /* or use ParallelBatchFlow */ {
   prep(shared: any): Array<Record<string, string>> {
     // Return a list of param dicts (one per file)
     const filenames = Object.keys(shared['data']) // e.g., ["file1.txt", "file2.txt", ...]
@@ -129,7 +235,7 @@ class SummarizeAllFiles extends BatchFlow {
 // Suppose we have a per-file Flow (e.g., load_file >> summarize >> reduce):
 const summarizeFile = new SummarizeFile(loadFile)
 
-// Wrap that flow into a BatchFlow:
+// Wrap that flow into a SequentialBatchFlow:
 const summarizeAllFiles = new SummarizeAllFiles(summarizeFile)
 summarizeAllFiles.run(shared)
 ```
@@ -147,9 +253,9 @@ summarizeAllFiles.run(shared)
 
 ---
 
-## 3. Nested or Multi-Level Batches
+## 5. Nested or Multi-Level Batches
 
-You can nest a **BatchFlow** in another **BatchFlow**. For instance:
+You can nest a **SequentialBatchFlow** or **ParallelBatchFlow** in another batch flow. For instance:
 
 - **Outer** batch: returns a list of diretory param dicts (e.g., `{"directory": "/pathA"}`, `{"directory": "/pathB"}`, ...).
 - **Inner** batch: returning a list of per-file param dicts.
@@ -160,14 +266,14 @@ At each level, **BatchFlow** merges its own param dict with the parent’s. By t
 {% tab title="Python" %}
 
 ```python
-class FileBatchFlow(BatchFlow):
+class FileBatchFlow(SequentialBatchFlow):
     def prep(self, shared):
         directory = self.params["directory"]
         # e.g., files = ["file1.txt", "file2.txt", ...]
         files = [f for f in os.listdir(directory) if f.endswith(".txt")]
         return [{"filename": f} for f in files]
 
-class DirectoryBatchFlow(BatchFlow):
+class DirectoryBatchFlow(SequentialBatchFlow):
     def prep(self, shared):
         directories = [ "/path/to/dirA", "/path/to/dirB"]
         return [{"directory": d} for d in directories]
@@ -182,7 +288,7 @@ outer_flow = DirectoryBatchFlow(start=inner_flow)
 {% tab title="TypeScript" %}
 
 ```typescript
-class FileBatchFlow extends BatchFlow {
+class FileBatchFlow extends SequentialBatchFlow {
   prep(shared: any): Array<Record<string, string>> {
     const directory = this.params['directory']
     // In real code you would use fs.readdirSync() or similar
@@ -192,7 +298,7 @@ class FileBatchFlow extends BatchFlow {
   }
 }
 
-class DirectoryBatchFlow extends BatchFlow {
+class DirectoryBatchFlow extends SequentialBatchFlow {
   prep(shared: any): Array<Record<string, string>> {
     const directories = ['/path/to/dirA', '/path/to/dirB']
     return directories.map((d) => ({ directory: d }))
