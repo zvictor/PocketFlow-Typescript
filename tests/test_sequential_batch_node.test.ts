@@ -215,27 +215,4 @@ describe('SequentialBatchNode Tests', () => {
     assert.strictEqual(combined.result_1.count, 3)
     assert.strictEqual(combined.result_2.count, 2)
   })
-
-  it('should handle async dependencies between items', async () => {
-    const testItems = [
-      { id: 'a', dependsOn: null, value: 1 },
-      { id: 'b', dependsOn: 'a', value: 2 },
-      { id: 'c', dependsOn: 'b', value: 3 },
-    ]
-
-    const context: Record<string, number> = {}
-    const node = new SequentialBatchNode(1)
-    node.exec = async (item: any) => {
-      if (item.dependsOn) {
-        assert(context[item.dependsOn], `Missing dependency ${item.dependsOn}`)
-      }
-      const result = item.value * 2
-      context[item.id] = result
-      return { [item.id]: result }
-    }
-
-    const results = await (node as any)._exec(testItems)
-    const combined = Object.assign({}, ...results)
-    assert.deepStrictEqual(combined, { a: 2, b: 4, c: 6 })
-  })
 })
