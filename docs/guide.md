@@ -321,7 +321,7 @@ export function createQaFlow(): Flow {
   const answerNode = new AnswerNode()
 
   // Connect nodes in sequence
-  getQuestionNode.rshift(answerNode)
+  getQuestionNode.next(answerNode)
 
   // Create flow starting with input node
   return new Flow(getQuestionNode)

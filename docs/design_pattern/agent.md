@@ -329,9 +329,9 @@ const search = new SearchWeb()
 const answer = new DirectAnswer()
 
 // Using operator overloading equivalents
-decide.minus('search').rshift(search)
-decide.minus('answer').rshift(answer)
-search.minus('decide').rshift(decide) // Loop back
+decide.on('search', search)
+decide.on('answer', answer)
+search.on('decide', decide) // Loop back
 
 const flow = new Flow(decide)
 flow.run({ query: 'Who won the Nobel Prize in Physics 2024?' })

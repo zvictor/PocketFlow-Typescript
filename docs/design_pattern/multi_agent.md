@@ -81,7 +81,7 @@ class AgentNode extends AsyncNode {
 
 // Create node and flow
 const agent = new AgentNode()
-agent.rshift(agent) // connect to self
+agent.next(agent) // connect to self
 const flow = new AsyncFlow(agent)
 
 // Create heartbeat sender
@@ -338,8 +338,8 @@ async function main() {
   const guesserFlow = new AsyncFlow(guesser)
 
   // Connect nodes to themselves
-  hinter.minus('continue').rshift(hinter)
-  guesser.minus('continue').rshift(guesser)
+  hinter.on('continue', hinter)
+  guesser.on('continue', guesser)
 
   // Run both agents concurrently
   await Promise.all([hinterFlow.runAsync(shared), guesserFlow.runAsync(shared)])

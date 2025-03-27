@@ -118,7 +118,7 @@ class CombineSummaries extends Node {
 
 const batchNode = new SummarizeAllFiles()
 const combineNode = new CombineSummaries()
-batchNode.rshift(combineNode)
+batchNode.next(combineNode)
 
 const flow = new Flow(batchNode)
 

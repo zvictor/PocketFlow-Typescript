@@ -203,7 +203,7 @@ const chunkNode = new ChunkDocs()
 const embedNode = new EmbedDocs()
 const storeNode = new StoreIndex()
 
-chunkNode.rshift(embedNode).rshift(storeNode)
+chunkNode.next(embedNode).next(storeNode)
 
 const OfflineFlow = new Flow(chunkNode)
 ```
@@ -400,7 +400,7 @@ const embedQNode = new EmbedQuery()
 const retrieveNode = new RetrieveDocs()
 const generateNode = new GenerateAnswer()
 
-embedQNode.rshift(retrieveNode).rshift(generateNode)
+embedQNode.next(retrieveNode).next(generateNode)
 const OnlineFlow = new Flow(embedQNode)
 ```
 

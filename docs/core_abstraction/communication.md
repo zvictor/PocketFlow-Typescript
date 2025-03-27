@@ -129,7 +129,7 @@ class Summarize extends Node {
 
 const loadData = new LoadData()
 const summarize = new Summarize()
-loadData.rshift(summarize)
+loadData.next(summarize)
 const flow = new Flow(loadData)
 
 const shared = {}
