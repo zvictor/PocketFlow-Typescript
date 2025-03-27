@@ -232,5 +232,4 @@ async function callApi() {
 
 ## Linking to Related Concepts
 
-For parallel processing without throttling, see [Parallel Nodes](./parallel.md).  
 For batch processing patterns, see [Batch Processing](./batch.md).

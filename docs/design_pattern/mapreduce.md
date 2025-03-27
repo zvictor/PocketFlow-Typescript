@@ -136,7 +136,3 @@ console.log('\nFinal Summary:\n', shared.all_files_summary)
 
 {% endtab %}
 {% endtabs %}
-
-{% hint style="info" %}
-**Performance Tip**: The example above works sequentially. You can speed up the map phase by running it in parallel. See [(Advanced) Parallel](../core_abstraction/parallel.md) for more details.
-{% endhint %}
