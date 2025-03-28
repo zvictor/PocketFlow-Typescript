@@ -1,7 +1,7 @@
 ---
 layout: default
-title: "Map Reduce"
-parent: "Design Pattern"
+title: 'Map Reduce'
+parent: 'Design Pattern'
 nav_order: 4
 ---
 
@@ -118,7 +118,7 @@ class CombineSummaries extends Node {
 
 const batchNode = new SummarizeAllFiles()
 const combineNode = new CombineSummaries()
-batchNode.rshift(combineNode)
+batchNode.next(combineNode)
 
 const flow = new Flow(batchNode)
 
@@ -136,7 +136,3 @@ console.log('\nFinal Summary:\n', shared.all_files_summary)
 
 {% endtab %}
 {% endtabs %}
-
-{% hint style="info" %}
-**Performance Tip**: The example above works sequentially. You can speed up the map phase by running it in parallel. See [(Advanced) Parallel](../core_abstraction/parallel.md) for more details.
-{% endhint %}

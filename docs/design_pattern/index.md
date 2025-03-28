@@ -1,6 +1,6 @@
 ---
 layout: default
-title: "Design Pattern"
+title: 'Design Pattern'
 nav_order: 3
 has_children: true
 ---

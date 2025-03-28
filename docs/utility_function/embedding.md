@@ -1,7 +1,7 @@
 ---
 layout: default
-title: "Embedding"
-parent: "Utility Function"
+title: 'Embedding'
+parent: 'Utility Function'
 nav_order: 5
 ---
 

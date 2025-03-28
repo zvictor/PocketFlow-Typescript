@@ -1,7 +1,7 @@
 ---
 layout: default
-title: "Flow"
-parent: "Core Abstraction"
+title: 'Flow'
+parent: 'Core Abstraction'
 nav_order: 2
 ---
 
@@ -13,20 +13,39 @@ A **Flow** orchestrates a graph of Nodes. You can chain Nodes in a sequence or c
 
 Each Node's `post()` returns an **Action** string. By default, if `post()` doesn't return anything, we treat that as `"default"`.
 
-You define transitions with the syntax:
+You define transitions with syntax sugar (in Python) or a method call:
+
+{% tabs %}
+{% tab title="Python" %}
 
 1. **Basic default transition**: `node_a >> node_b`
    This means if `node_a.post()` returns `"default"`, go to `node_b`.
-   (Equivalent to `node_a - "default" >> node_b`)
 
 2. **Named action transition**: `node_a - "action_name" >> node_b`
    This means if `node_a.post()` returns `"action_name"`, go to `node_b`.
+
+Note that `node_a >> node_b` is equivalent to `node_a - "default" >> node_b`
+
+{% endtab %}
+
+{% tab title="TypeScript" %}
+
+1. **Basic default transition**: `node_a.next(node_b)`
+   This means if `node_a.post()` returns `"default"`, go to `node_b`.
+
+2. **Named action transition**: `node_a.on('action_name', node_b)` or `node_a.next(node_b, 'action_name')`
+   This means if `node_a.post()` returns `"action_name"`, go to `node_b`.
+
+Note that `node_a.next(node_b)` is equivalent to both `node_a.next(node_b, 'default')` and `node_a.on('default', node_b)`
+
+{% endtab %}
+{% endtabs %}
 
 It's possible to create loops, branching, or multi-step flows.
 
 ## 2. Creating a Flow
 
-A **Flow** begins with a **start** node. You call `Flow(start=some_node)` to specify the entry point. When you call `flow.run(shared)`, it executes the start node, looks at its returned Action from `post()`, follows the transition, and continues until there's no next node.
+A **Flow** begins with a **start** node. You call `Flow(start=some_node)` (in Python) or `new Flow(some_node)` (in Javascript) to specify the entry point. When you call `flow.run(shared)`, it executes the start node, looks at its returned Action from `post()`, follows the transition, and continues until there's no next node.
 
 ### Example: Simple Sequence
 
@@ -46,7 +65,7 @@ flow.run(shared)
 {% tab title="TypeScript" %}
 
 ```typescript
-node_a.rshift(node_b)
+node_a.next(node_b)
 const flow = new Flow(node_a)
 flow.run(shared)
 ```
@@ -90,12 +109,12 @@ flow = Flow(start=review)
 
 ```typescript
 // Define the flow connections
-review.minus('approved').rshift(payment) // If approved, process payment
-review.minus('needs_revision').rshift(revise) // If needs changes, go to revision
-review.minus('rejected').rshift(finish) // If rejected, finish the process
+review.on('approved', payment) // If approved, process payment
+review.on('needs_revision', revise) // If needs changes, go to revision
+review.on('rejected', finish) // If rejected, finish the process
 
-revise.rshift(review) // After revision, go back for another review
-payment.rshift(finish) // After payment, finish the process
+revise.next(review) // After revision, go back for another review
+payment.next(finish) // After payment, finish the process
 
 const flow = new Flow(review)
 ```
@@ -171,11 +190,11 @@ parent_flow = Flow(start=subflow)
 
 ```typescript
 // Create a sub-flow
-node_a.rshift(node_b)
+node_a.next(node_b)
 const subflow = new Flow(node_a)
 
 // Connect it to another node
-subflow.rshift(node_c)
+subflow.next(node_c)
 
 // Create the parent flow
 const parentFlow = new Flow(subflow)
@@ -226,19 +245,19 @@ order_pipeline.run(shared_data)
 
 ```typescript
 // Payment processing sub-flow
-validate_payment.rshift(process_payment).rshift(payment_confirmation)
+validate_payment.next(process_payment).next(payment_confirmation)
 const paymentFlow = new Flow(validate_payment)
 
 // Inventory sub-flow
-check_stock.rshift(reserve_items).rshift(update_inventory)
+check_stock.next(reserve_items).next(update_inventory)
 const inventoryFlow = new Flow(check_stock)
 
 // Shipping sub-flow
-create_label.rshift(assign_carrier).rshift(schedule_pickup)
+create_label.next(assign_carrier).next(schedule_pickup)
 const shippingFlow = new Flow(create_label)
 
 // Connect the flows into a main order pipeline
-paymentFlow.rshift(inventoryFlow).rshift(shippingFlow)
+paymentFlow.next(inventoryFlow).next(shippingFlow)
 
 // Create the master flow
 const orderPipeline = new Flow(paymentFlow)

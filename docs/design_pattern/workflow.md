@@ -1,7 +1,7 @@
 ---
 layout: default
-title: "Workflow"
-parent: "Design Pattern"
+title: 'Workflow'
+parent: 'Design Pattern'
 nav_order: 2
 ---
 
@@ -100,7 +100,7 @@ const outline = new GenerateOutline()
 const write = new WriteSection()
 const review = new ReviewAndRefine()
 
-outline.rshift(write).rshift(review)
+outline.next(write).next(review)
 
 // Create and run flow
 const writingFlow = new Flow(outline)

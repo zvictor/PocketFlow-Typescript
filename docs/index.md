@@ -1,6 +1,6 @@
 ---
 layout: default
-title: "Home"
+title: 'Home'
 nav_order: 1
 ---
 
@@ -24,8 +24,7 @@ We model the LLM workflow as a **Graph + Shared Store**:
 - [Flow](./core_abstraction/flow.md) connects nodes through **Actions** (labeled edges).
 - [Shared Store](./core_abstraction/communication.md) enables communication between nodes within flows.
 - [Batch](./core_abstraction/batch.md) nodes/flows allow for data-intensive tasks.
-- [Async](./core_abstraction/async.md) nodes/flows allow waiting for asynchronous tasks.
-- [(Advanced) Parallel](./core_abstraction/parallel.md) nodes/flows handle I/O-bound tasks.
+- [(Advanced) Throttling](./core_abstraction/throttling.md) helps manage concurrency and rate limits.
 
 <div align="center">
   <img src="https://github.com/the-pocket/.github/raw/main/assets/abstraction.png" width="500"/>
